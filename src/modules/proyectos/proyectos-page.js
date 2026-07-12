@@ -176,7 +176,10 @@
       try {
         const [info, projects, types, summary] = await Promise.all([
           global.IpcService.getAppInfo(),
-          global.ProyectosService.listar({ includeCompleted: true }),
+          global.ProyectosService.listar({
+            includeCompleted: true,
+            includeArchived: true
+          }),
           global.ProyectosService.listarTipos(),
           global.ProyectosService.obtenerResumen()
         ]);
