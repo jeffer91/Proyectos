@@ -22,7 +22,8 @@
       dateFrom: "",
       dateTo: "",
       economic: "todos",
-      includeCompleted: false
+      includeCompleted: false,
+      quickFilter: "total"
     },
     sort: {
       field: "proximaFecha",
@@ -133,7 +134,10 @@
           "includeCompleted"
         )
           ? source.includeCompleted === true
-          : state.filters.includeCompleted
+          : state.filters.includeCompleted,
+        quickFilter: Object.prototype.hasOwnProperty.call(source, "quickFilter")
+          ? String(source.quickFilter || "custom")
+          : state.filters.quickFilter
       };
       state.pagination.page = 1;
       notify();
@@ -147,7 +151,8 @@
         dateFrom: "",
         dateTo: "",
         economic: "todos",
-        includeCompleted: false
+        includeCompleted: false,
+        quickFilter: "total"
       };
       state.pagination.page = 1;
       notify();
