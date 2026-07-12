@@ -7,7 +7,6 @@ const tiposRepository = require("../../database/repositories/tipos-repository");
 const hitosRepository = require("../../database/repositories/hitos-repository");
 const {
   ensureProjectStructure,
-  updateProjectMetadata,
   getProjectPaths
 } = require("../services/project-storage-service");
 
@@ -177,7 +176,6 @@ function registerProyectosIpc() {
       pickProjectChanges(changes)
     );
     ensureProjectStructure({ projectId: project.id, projectName: project.nombre });
-    updateProjectMetadata(project.id, { projectName: project.nombre });
     return project;
   });
 
