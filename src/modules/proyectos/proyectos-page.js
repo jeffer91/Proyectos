@@ -78,24 +78,80 @@
       }
     });
 
+    function setTechnicalStatus(message, isError = false) {
+      if (!statusElement) return;
+      statusElement.textContent = message;
+      statusElement.classList.toggle("is-error", isError);
+    }
+
+    async function openProject(project) {
+      try {
+        global.ProyectosState.selectProject(project.id);
+        listView.hidden = true;
+        detailView.hidden = false;
+        const snapshot = global.ProyectosState.getSnapshot();
+        await detailPage.open(project.id, snapshot.types);
+      } catch (error) {
+        console.error("No fue posible abrir el proyecto:", error);
+        detailPage.close();
+        listView.hidden = false;
+        setTechnicalStatus(error.message, true);
+      }
+    }
+
+    function offerProjectRestore(project) {
+      const content = document.createElement("p");
+      content.className = "confirmation-text";
+      content.textContent =
+        `“${project.nombre}” está archivado. Restáuralo para volver a abrirlo y editarlo.`;
+
+      let modal = null;
+      modal = global.Modal.create({
+        title: "Proyecto archivado",
+        content,
+        actions: [
+          { label: "Cancelar", className: "button button-secondary" },
+          {
+            label: "Restaurar proyecto",
+            className: "button button-primary",
+            async onClick(event) {
+              const button = event.currentTarget;
+              try {
+                button.disabled = true;
+                button.textContent = "Restaurando...";
+                const restored = await global.ProyectosService.actualizar(project.id, {
+                  archivado: false
+                });
+                await refreshData();
+                await openProject(restored);
+                return true;
+              } catch (error) {
+                button.disabled = false;
+                button.textContent = "Restaurar proyecto";
+                setTechnicalStatus(error.message, true);
+                return false;
+              }
+            }
+          }
+        ],
+        onClose() {
+          window.setTimeout(() => modal?.destroy(), 0);
+        }
+      });
+      modal.open();
+    }
+
     const table = global.ProyectosTable.create({
       body: tableBody,
       onSort(field) {
         global.ProyectosState.toggleSort(field);
       },
-      async onOpen(project) {
-        try {
-          global.ProyectosState.selectProject(project.id);
-          listView.hidden = true;
-          detailView.hidden = false;
-          const snapshot = global.ProyectosState.getSnapshot();
-          await detailPage.open(project.id, snapshot.types);
-        } catch (error) {
-          console.error("No fue posible abrir el proyecto:", error);
-          detailPage.close();
-          listView.hidden = false;
-          setTechnicalStatus(error.message, true);
+      onOpen(project) {
+        if (project.archivado === true) {
+          offerProjectRestore(project);
+          return;
         }
+        void openProject(project);
       }
     });
 
@@ -108,12 +164,6 @@
         global.ProyectosState.setPageSize(pageSize);
       }
     });
-
-    function setTechnicalStatus(message, isError = false) {
-      if (!statusElement) return;
-      statusElement.textContent = message;
-      statusElement.classList.toggle("is-error", isError);
-    }
 
     function render(snapshot) {
       filters.populateTypes(snapshot.types);
