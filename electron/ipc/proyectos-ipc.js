@@ -1,11 +1,13 @@
 "use strict";
 
-const { ipcMain } = require("electron");
+const fs = require("fs");
+const { ipcMain, shell } = require("electron");
 const proyectosRepository = require("../../database/repositories/proyectos-repository");
 const tiposRepository = require("../../database/repositories/tipos-repository");
 const {
   ensureProjectStructure,
-  updateProjectMetadata
+  updateProjectMetadata,
+  getProjectPaths
 } = require("../services/project-storage-service");
 
 const CHANNELS = Object.freeze({
@@ -64,6 +66,48 @@ function pickProjectChanges(value) {
   return result;
 }
 
+async function removeProjectAndStorage(projectId) {
+  const normalizedId = requireProjectId(projectId);
+  const project = proyectosRepository.findById(normalizedId);
+  if (!project) return false;
+
+  const projectRoot = getProjectPaths(normalizedId).root;
+  const stagedRoot = `${projectRoot}.deleting-${Date.now()}`;
+  let storageStaged = false;
+
+  if (fs.existsSync(projectRoot)) {
+    fs.renameSync(projectRoot, stagedRoot);
+    storageStaged = true;
+  }
+
+  try {
+    const removed = proyectosRepository.remove(normalizedId);
+    if (!removed) {
+      if (storageStaged && fs.existsSync(stagedRoot)) fs.renameSync(stagedRoot, projectRoot);
+      return false;
+    }
+  } catch (error) {
+    if (storageStaged && fs.existsSync(stagedRoot)) {
+      try {
+        fs.renameSync(stagedRoot, projectRoot);
+      } catch (restoreError) {
+        console.error("No se pudo restaurar la carpeta del proyecto:", restoreError);
+      }
+    }
+    throw error;
+  }
+
+  if (storageStaged && fs.existsSync(stagedRoot)) {
+    try {
+      await shell.trashItem(stagedRoot);
+    } catch (trashError) {
+      console.error("El proyecto se eliminó de la base, pero su carpeta no pudo enviarse a la Papelera:", trashError);
+    }
+  }
+
+  return true;
+}
+
 function registerProyectosIpc() {
   registerHandler(CHANNELS.LIST_PROJECTS, (options = {}) =>
     proyectosRepository.list({
@@ -104,9 +148,7 @@ function registerProyectosIpc() {
     return project;
   });
 
-  registerHandler(CHANNELS.DELETE_PROJECT, (projectId) =>
-    proyectosRepository.remove(requireProjectId(projectId))
-  );
+  registerHandler(CHANNELS.DELETE_PROJECT, removeProjectAndStorage);
   registerHandler(CHANNELS.GET_SUMMARY, () => proyectosRepository.getSummary());
   registerHandler(CHANNELS.LIST_TYPES, () => tiposRepository.list());
   registerHandler(CHANNELS.CREATE_TYPE, (name) => tiposRepository.create(name));
