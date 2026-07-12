@@ -148,10 +148,14 @@
         for (const project of projects) {
           const row = document.createElement("tr");
           row.className = "project-row";
+          row.classList.toggle("is-archived", project.archivado === true);
           row.dataset.projectId = project.id;
           row.tabIndex = 0;
           row.setAttribute("role", "button");
-          row.setAttribute("aria-label", `Abrir proyecto ${project.nombre}`);
+          row.setAttribute(
+            "aria-label",
+            `${project.archivado ? "Abrir proyecto archivado" : "Abrir proyecto"} ${project.nombre}`
+          );
 
           const statusCell = document.createElement("td");
           statusCell.append(global.StatusBadge.create(project.estado));
@@ -159,11 +163,14 @@
           progressCell.append(global.ProgressBar.create(project.avance));
 
           row.append(
-            textCell(project.nombre),
+            textCell(project.nombre, project.archivado ? "Archivado" : ""),
             textCell(project.tipoNombre),
             statusCell,
             dateCell(project.fechaInicio),
-            dateCell(project.proximaFecha, true),
+            dateCell(
+              project.proximaFecha,
+              project.estado !== "completado" && project.archivado !== true
+            ),
             dateCell(project.ultimaActualizacion),
             contributionCell(project),
             progressCell
