@@ -10,6 +10,8 @@
     "[tabindex]:not([tabindex='-1'])"
   ].join(",");
 
+  let openModalCount = 0;
+
   function appendContent(target, content) {
     if (content instanceof Node) {
       target.append(content);
@@ -28,37 +30,11 @@
     }
   }
 
-  function createButton(action, close) {
-    const button = document.createElement("button");
-    button.type = action.type || "button";
-    button.className = action.className || "button button-secondary";
-    button.textContent = action.label || "Aceptar";
-
-    if (action.disabled === true) {
-      button.disabled = true;
-    }
-
-    button.addEventListener("click", async (event) => {
-      if (typeof action.onClick !== "function") {
-        if (action.closeOnClick !== false) {
-          close();
-        }
-        return;
-      }
-
-      const result = await action.onClick(event);
-      if (result !== false && action.closeOnClick !== false) {
-        close();
-      }
-    });
-
-    return button;
-  }
-
   function create(options = {}) {
     const title = String(options.title || "Ventana");
-    const previousActiveElement = document.activeElement;
+    let previousActiveElement = null;
     let isOpen = false;
+    let isBusy = false;
 
     const backdrop = document.createElement("div");
     backdrop.className = "modal-backdrop";
@@ -66,6 +42,7 @@
 
     const dialog = document.createElement("section");
     dialog.className = "modal-dialog";
+    dialog.tabIndex = -1;
     dialog.setAttribute("role", "dialog");
     dialog.setAttribute("aria-modal", "true");
 
@@ -92,6 +69,7 @@
     dialog.append(header, body);
 
     let footer = null;
+    const actionButtons = [];
     if (Array.isArray(options.actions) && options.actions.length > 0) {
       footer = document.createElement("footer");
       footer.className = "modal-footer";
@@ -104,21 +82,36 @@
       return Array.from(dialog.querySelectorAll(FOCUSABLE_SELECTOR));
     }
 
-    function close() {
-      if (!isOpen) {
+    function updateBusyState(value) {
+      isBusy = value === true;
+      closeButton.disabled = isBusy;
+      dialog.setAttribute("aria-busy", String(isBusy));
+
+      for (const button of actionButtons) {
+        button.disabled = isBusy || button.dataset.initiallyDisabled === "true";
+      }
+    }
+
+    function close(force = false) {
+      if (!isOpen || (isBusy && !force)) {
         return;
       }
 
       isOpen = false;
+      isBusy = false;
       backdrop.hidden = true;
-      document.body.classList.remove("no-scroll");
       document.removeEventListener("keydown", handleKeydown);
+      openModalCount = Math.max(0, openModalCount - 1);
+
+      if (openModalCount === 0) {
+        document.body.classList.remove("no-scroll");
+      }
 
       if (typeof options.onClose === "function") {
         options.onClose();
       }
 
-      if (previousActiveElement instanceof HTMLElement) {
+      if (previousActiveElement instanceof HTMLElement && previousActiveElement.isConnected) {
         previousActiveElement.focus();
       }
     }
@@ -153,6 +146,50 @@
       }
     }
 
+    function createActionButton(action) {
+      const button = document.createElement("button");
+      button.type = action.type || "button";
+      button.className = action.className || "button button-secondary";
+      button.textContent = action.label || "Aceptar";
+      button.dataset.initiallyDisabled = String(action.disabled === true);
+      button.disabled = action.disabled === true;
+
+      button.addEventListener("click", async (event) => {
+        if (isBusy) {
+          return;
+        }
+
+        if (typeof action.onClick !== "function") {
+          if (action.closeOnClick !== false) {
+            close();
+          }
+          return;
+        }
+
+        updateBusyState(true);
+
+        try {
+          const result = await action.onClick(event);
+          updateBusyState(false);
+
+          if (result !== false && action.closeOnClick !== false) {
+            close(true);
+          }
+        } catch (error) {
+          updateBusyState(false);
+
+          if (typeof options.onError === "function") {
+            options.onError(error);
+          } else {
+            console.error("Error en una acción del modal:", error);
+          }
+        }
+      });
+
+      actionButtons.push(button);
+      return button;
+    }
+
     function open() {
       if (isOpen) {
         return;
@@ -162,8 +199,10 @@
         document.body.append(backdrop);
       }
 
+      previousActiveElement = document.activeElement;
       isOpen = true;
       backdrop.hidden = false;
+      openModalCount += 1;
       document.body.classList.add("no-scroll");
       document.addEventListener("keydown", handleKeydown);
 
@@ -176,11 +215,11 @@
     }
 
     function destroy() {
-      close();
+      close(true);
       backdrop.remove();
     }
 
-    closeButton.addEventListener("click", close);
+    closeButton.addEventListener("click", () => close());
     backdrop.addEventListener("mousedown", (event) => {
       if (event.target === backdrop && options.closeOnBackdrop !== false) {
         close();
@@ -189,7 +228,7 @@
 
     if (footer) {
       for (const action of options.actions) {
-        footer.append(createButton(action, close));
+        footer.append(createActionButton(action));
       }
     }
 
@@ -200,7 +239,8 @@
       open,
       close,
       destroy,
-      isOpen: () => isOpen
+      isOpen: () => isOpen,
+      isBusy: () => isBusy
     });
   }
 
