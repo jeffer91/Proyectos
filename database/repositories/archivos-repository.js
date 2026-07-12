@@ -39,6 +39,26 @@ function optionalText(value, maxLength = 255) {
   return normalized || null;
 }
 
+function normalizeSize(value) {
+  const size = Number(value);
+  if (!Number.isInteger(size) || size < 0) {
+    throw new Error("El tamaño del archivo debe ser un entero igual o mayor que cero.");
+  }
+  return size;
+}
+
+function ensureProjectExists(projectId) {
+  const projectExists = getDatabase()
+    .prepare("SELECT 1 AS existe FROM proyectos WHERE id = ?")
+    .get(projectId);
+
+  if (!projectExists) {
+    const error = new Error("El proyecto asociado al archivo no existe.");
+    error.code = "PROJECT_NOT_FOUND";
+    throw error;
+  }
+}
+
 function mapFile(row) {
   if (!row) {
     return null;
@@ -85,7 +105,8 @@ function listByProject(projectId) {
   return rows.map(mapFile);
 }
 
-function create({
+function insertFile({
+  id,
   proyectoId,
   nombreOriginal,
   nombreGuardado,
@@ -93,27 +114,12 @@ function create({
   tipoMime = null,
   rutaRelativa,
   tamanoBytes = 0,
-  hashSha256 = null
-} = {}) {
+  hashSha256 = null,
+  creadoEn,
+  actualizadoEn
+}) {
   const normalizedProjectId = requiredText(proyectoId, "El identificador del proyecto", 80);
-  const projectExists = getDatabase()
-    .prepare("SELECT 1 AS existe FROM proyectos WHERE id = ?")
-    .get(normalizedProjectId);
-
-  if (!projectExists) {
-    const error = new Error("El proyecto asociado al archivo no existe.");
-    error.code = "PROJECT_NOT_FOUND";
-    throw error;
-  }
-
-  const size = Number(tamanoBytes);
-
-  if (!Number.isInteger(size) || size < 0) {
-    throw new Error("El tamaño del archivo debe ser un entero igual o mayor que cero.");
-  }
-
-  const id = randomUUID();
-  const now = new Date().toISOString();
+  ensureProjectExists(normalizedProjectId);
 
   getDatabase()
     .prepare(`
@@ -132,20 +138,68 @@ function create({
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `)
     .run(
-      id,
+      requiredText(id, "El identificador del archivo", 80),
       normalizedProjectId,
       requiredText(nombreOriginal, "El nombre original", 255),
       requiredText(nombreGuardado, "El nombre guardado", 255),
       optionalText(extension, 20),
       optionalText(tipoMime, 120),
       requiredText(rutaRelativa, "La ruta relativa", 1024),
-      size,
+      normalizeSize(tamanoBytes),
       optionalText(hashSha256, 64),
-      now,
-      now
+      requiredText(creadoEn, "La fecha de creación", 40),
+      requiredText(actualizadoEn, "La fecha de actualización", 40)
     );
 
   return findById(id);
+}
+
+function create({
+  proyectoId,
+  nombreOriginal,
+  nombreGuardado,
+  extension = null,
+  tipoMime = null,
+  rutaRelativa,
+  tamanoBytes = 0,
+  hashSha256 = null
+} = {}) {
+  const id = randomUUID();
+  const now = new Date().toISOString();
+
+  return insertFile({
+    id,
+    proyectoId,
+    nombreOriginal,
+    nombreGuardado,
+    extension,
+    tipoMime,
+    rutaRelativa,
+    tamanoBytes,
+    hashSha256,
+    creadoEn: now,
+    actualizadoEn: now
+  });
+}
+
+function restore(file) {
+  if (!file || typeof file !== "object") {
+    throw new TypeError("Se requiere la información del archivo para restaurarlo.");
+  }
+
+  return insertFile({
+    id: file.id,
+    proyectoId: file.proyectoId,
+    nombreOriginal: file.nombreOriginal,
+    nombreGuardado: file.nombreGuardado,
+    extension: file.extension,
+    tipoMime: file.tipoMime,
+    rutaRelativa: file.rutaRelativa,
+    tamanoBytes: file.tamanoBytes,
+    hashSha256: file.hashSha256,
+    creadoEn: file.creadoEn || new Date().toISOString(),
+    actualizadoEn: file.actualizadoEn || new Date().toISOString()
+  });
 }
 
 function remove(id) {
@@ -163,5 +217,6 @@ module.exports = {
   listByProject,
   findById,
   create,
+  restore,
   remove
 };
