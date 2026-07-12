@@ -69,8 +69,13 @@ function requireMilestoneId(value) {
 function pickProjectChanges(value) {
   const source = value && typeof value === "object" ? value : {};
   const allowedFields = [
-    "nombre", "tipoId", "estado", "fechaInicio", "proximaFecha",
-    "aporteEsperadoCentavos", "aporteRecibidoCentavos", "avance", "archivado"
+    "nombre",
+    "tipoId",
+    "estado",
+    "fechaInicio",
+    "aporteEsperadoCentavos",
+    "aporteRecibidoCentavos",
+    "archivado"
   ];
   const result = {};
 
@@ -94,7 +99,7 @@ function pickMilestoneChanges(value) {
 async function removeProjectAndStorage(projectId) {
   const normalizedId = requireProjectId(projectId);
   const project = proyectosRepository.findById(normalizedId);
-  if (!project) return false;
+  if (!project) return { removed: false, storageWarning: null };
 
   const projectRoot = getProjectPaths(normalizedId).root;
   const stagedRoot = `${projectRoot}.deleting-${Date.now()}`;
@@ -109,7 +114,7 @@ async function removeProjectAndStorage(projectId) {
     const removed = proyectosRepository.remove(normalizedId);
     if (!removed) {
       if (storageStaged && fs.existsSync(stagedRoot)) fs.renameSync(stagedRoot, projectRoot);
-      return false;
+      return { removed: false, storageWarning: null };
     }
   } catch (error) {
     if (storageStaged && fs.existsSync(stagedRoot)) {
@@ -122,18 +127,18 @@ async function removeProjectAndStorage(projectId) {
     throw error;
   }
 
+  let storageWarning = null;
   if (storageStaged && fs.existsSync(stagedRoot)) {
     try {
       await shell.trashItem(stagedRoot);
     } catch (trashError) {
-      console.error(
-        "El proyecto se eliminó de la base, pero su carpeta no pudo enviarse a la Papelera:",
-        trashError
-      );
+      storageWarning =
+        "El proyecto se eliminó de la base, pero su carpeta no pudo enviarse a la Papelera.";
+      console.error(storageWarning, trashError);
     }
   }
 
-  return true;
+  return { removed: true, storageWarning };
 }
 
 function registerProyectosIpc() {
