@@ -3,6 +3,10 @@
 const { ipcMain } = require("electron");
 const proyectosRepository = require("../../database/repositories/proyectos-repository");
 const tiposRepository = require("../../database/repositories/tipos-repository");
+const {
+  ensureProjectStructure,
+  updateProjectMetadata
+} = require("../services/project-storage-service");
 
 const CHANNELS = Object.freeze({
   LIST_PROJECTS: "proyectos:listar",
@@ -26,8 +30,7 @@ function serializeError(error) {
 function safeHandler(channel, callback) {
   return async (_event, ...args) => {
     try {
-      const data = await callback(...args);
-      return { ok: true, data };
+      return { ok: true, data: await callback(...args) };
     } catch (error) {
       console.error(`[IPC] Error en ${channel}:`, error);
       return { ok: false, error: serializeError(error) };
@@ -44,31 +47,20 @@ function requireProjectId(value) {
   if (typeof value !== "string" || !value.trim()) {
     throw new Error("El identificador del proyecto es obligatorio.");
   }
-
   return value.trim();
 }
 
 function pickProjectChanges(value) {
   const source = value && typeof value === "object" ? value : {};
   const allowedFields = [
-    "nombre",
-    "tipoId",
-    "estado",
-    "fechaInicio",
-    "proximaFecha",
-    "aporteEsperadoCentavos",
-    "aporteRecibidoCentavos",
-    "avance",
-    "archivado"
+    "nombre", "tipoId", "estado", "fechaInicio", "proximaFecha",
+    "aporteEsperadoCentavos", "aporteRecibidoCentavos", "avance", "archivado"
   ];
   const result = {};
 
   for (const field of allowedFields) {
-    if (Object.prototype.hasOwnProperty.call(source, field)) {
-      result[field] = source[field];
-    }
+    if (Object.prototype.hasOwnProperty.call(source, field)) result[field] = source[field];
   }
-
   return result;
 }
 
@@ -80,42 +72,49 @@ function registerProyectosIpc() {
     })
   );
 
-  registerHandler(CHANNELS.GET_PROJECT, (projectId) =>
-    proyectosRepository.findById(requireProjectId(projectId))
-  );
+  registerHandler(CHANNELS.GET_PROJECT, (projectId) => {
+    const project = proyectosRepository.findById(requireProjectId(projectId));
+    if (project) ensureProjectStructure({ projectId: project.id, projectName: project.nombre });
+    return project;
+  });
 
-  registerHandler(CHANNELS.CREATE_PROJECT, (payload = {}) =>
-    proyectosRepository.create({
+  registerHandler(CHANNELS.CREATE_PROJECT, (payload = {}) => {
+    const project = proyectosRepository.create({
       nombre: payload?.nombre,
       tipoId: payload?.tipoId,
       fechaInicio: payload?.fechaInicio
-    })
-  );
+    });
 
-  registerHandler(CHANNELS.UPDATE_PROJECT, (projectId, changes = {}) =>
-    proyectosRepository.update(requireProjectId(projectId), pickProjectChanges(changes))
-  );
+    try {
+      ensureProjectStructure({ projectId: project.id, projectName: project.nombre });
+      return project;
+    } catch (error) {
+      proyectosRepository.remove(project.id);
+      throw error;
+    }
+  });
+
+  registerHandler(CHANNELS.UPDATE_PROJECT, (projectId, changes = {}) => {
+    const project = proyectosRepository.update(
+      requireProjectId(projectId),
+      pickProjectChanges(changes)
+    );
+    ensureProjectStructure({ projectId: project.id, projectName: project.nombre });
+    updateProjectMetadata(project.id, { projectName: project.nombre });
+    return project;
+  });
 
   registerHandler(CHANNELS.DELETE_PROJECT, (projectId) =>
     proyectosRepository.remove(requireProjectId(projectId))
   );
-
   registerHandler(CHANNELS.GET_SUMMARY, () => proyectosRepository.getSummary());
-
   registerHandler(CHANNELS.LIST_TYPES, () => tiposRepository.list());
-
   registerHandler(CHANNELS.CREATE_TYPE, (name) => tiposRepository.create(name));
-
   registerHandler(CHANNELS.RENAME_TYPE, (typeId, name) => tiposRepository.rename(typeId, name));
 
   return function unregisterProyectosIpc() {
-    for (const channel of Object.values(CHANNELS)) {
-      ipcMain.removeHandler(channel);
-    }
+    for (const channel of Object.values(CHANNELS)) ipcMain.removeHandler(channel);
   };
 }
 
-module.exports = {
-  CHANNELS,
-  registerProyectosIpc
-};
+module.exports = { CHANNELS, registerProyectosIpc };
