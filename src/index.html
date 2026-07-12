@@ -137,19 +137,21 @@
       </header>
 
       <section class="status-card" aria-labelledby="initial-status-title">
-        <h2 id="initial-status-title">Base de la aplicación lista</h2>
+        <h2 id="initial-status-title">Comunicación local lista</h2>
         <p>
-          Electron está funcionando correctamente. En los siguientes bloques se
-          incorporarán la base de datos, la tabla de proyectos, los filtros y la
-          administración de documentos.
+          Electron, los canales IPC y SQLite están conectados de forma segura. El
+          siguiente bloque incorporará el diseño visual y los componentes reutilizables.
         </p>
         <div class="technical-status" id="technical-status" role="status">
-          Comprobando conexión con Electron
+          Comprobando servicios locales
         </div>
         <div class="app-version" id="app-version"></div>
       </section>
     </main>
 
+    <script src="./services/ipc-service.js" defer></script>
+    <script src="./modules/proyectos/proyectos-service.js" defer></script>
+    <script src="./modules/proyectos/proyectos-state.js" defer></script>
     <script src="./app.js" defer></script>
   </body>
 </html>
