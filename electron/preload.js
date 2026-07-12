@@ -38,6 +38,15 @@ const api = Object.freeze({
     renombrar: (typeId, name) => invoke("tipos:renombrar", typeId, name)
   }),
 
+  hitos: Object.freeze({
+    listar: (projectId) => invoke("hitos:listar", projectId),
+    obtener: (milestoneId) => invoke("hitos:obtener", milestoneId),
+    crear: (payload) => invoke("hitos:crear", payload),
+    actualizar: (milestoneId, changes) =>
+      invoke("hitos:actualizar", milestoneId, changes),
+    eliminar: (milestoneId) => invoke("hitos:eliminar", milestoneId)
+  }),
+
   archivos: Object.freeze({
     listarPorProyecto: (projectId) =>
       invoke("archivos:listar-por-proyecto", projectId),
