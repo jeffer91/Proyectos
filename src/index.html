@@ -4,151 +4,144 @@
     <meta charset="UTF-8" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'"
     />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light" />
     <title>Proyectos</title>
-    <style>
-      :root {
-        font-family: Inter, "Segoe UI", Arial, sans-serif;
-        color: #162033;
-        background: #f5f7fb;
-      }
 
-      * {
-        box-sizing: border-box;
-      }
-
-      body {
-        margin: 0;
-        min-width: 320px;
-        min-height: 100vh;
-        background: #f5f7fb;
-      }
-
-      button,
-      input,
-      select {
-        font: inherit;
-      }
-
-      .app-shell {
-        min-height: 100vh;
-        padding: 32px;
-      }
-
-      .page-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 20px;
-        margin-bottom: 24px;
-      }
-
-      .page-title {
-        margin: 0;
-        font-size: 30px;
-        line-height: 1.2;
-      }
-
-      .page-subtitle {
-        margin: 6px 0 0;
-        color: #667085;
-      }
-
-      .primary-button {
-        border: 0;
-        border-radius: 10px;
-        padding: 11px 18px;
-        color: #ffffff;
-        background: #2563eb;
-        cursor: not-allowed;
-        opacity: 0.72;
-      }
-
-      .status-card {
-        border: 1px solid #e4e7ec;
-        border-radius: 14px;
-        padding: 28px;
-        background: #ffffff;
-        box-shadow: 0 4px 14px rgb(16 24 40 / 6%);
-      }
-
-      .status-card h2 {
-        margin-top: 0;
-        margin-bottom: 10px;
-        font-size: 20px;
-      }
-
-      .status-card p {
-        margin: 0;
-        color: #667085;
-        line-height: 1.6;
-      }
-
-      .technical-status {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        margin-top: 18px;
-        padding: 8px 11px;
-        border-radius: 999px;
-        color: #067647;
-        background: #ecfdf3;
-        font-size: 14px;
-        font-weight: 600;
-      }
-
-      .technical-status::before {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: #12b76a;
-        content: "";
-      }
-
-      .app-version {
-        margin-top: 18px;
-        color: #98a2b3;
-        font-size: 12px;
-      }
-
-      @media (max-width: 720px) {
-        .app-shell {
-          padding: 20px;
-        }
-
-        .page-header {
-          align-items: flex-start;
-          flex-direction: column;
-        }
-      }
-    </style>
+    <link rel="stylesheet" href="./styles/variables.css" />
+    <link rel="stylesheet" href="./styles/global.css" />
+    <link rel="stylesheet" href="./styles/layout.css" />
+    <link rel="stylesheet" href="./styles/components.css" />
   </head>
   <body>
     <main class="app-shell">
-      <header class="page-header">
-        <div>
-          <h1 class="page-title">Proyectos</h1>
-          <p class="page-subtitle">Gestiona tus proyectos, avances y documentos.</p>
-        </div>
-        <button class="primary-button" type="button" disabled>Nuevo proyecto</button>
-      </header>
+      <div class="page-container content-stack">
+        <header class="page-header">
+          <div class="page-heading">
+            <h1 class="page-title">Proyectos</h1>
+            <p class="page-subtitle">
+              Revisa el avance, las fechas y el aporte de todos tus proyectos desde una sola pantalla.
+            </p>
+          </div>
 
-      <section class="status-card" aria-labelledby="initial-status-title">
-        <h2 id="initial-status-title">Comunicación local lista</h2>
-        <p>
-          Electron, los canales IPC y SQLite están conectados de forma segura. El
-          siguiente bloque incorporará el diseño visual y los componentes reutilizables.
-        </p>
-        <div class="technical-status" id="technical-status" role="status">
-          Comprobando servicios locales
-        </div>
-        <div class="app-version" id="app-version"></div>
-      </section>
+          <div class="page-actions">
+            <button
+              class="button button-primary"
+              id="new-project-button"
+              type="button"
+              disabled
+              title="La creación de proyectos se habilitará en el siguiente bloque"
+            >
+              Nuevo proyecto
+            </button>
+          </div>
+        </header>
+
+        <section class="stats-grid" aria-label="Resumen de proyectos">
+          <button class="stat-card" type="button" disabled>
+            <span class="stat-label">Total de proyectos</span>
+            <strong class="stat-value" id="stat-total">0</strong>
+            <span class="stat-hint">Todos los proyectos guardados</span>
+          </button>
+
+          <button class="stat-card" type="button" disabled>
+            <span class="stat-label">Próximos a vencer</span>
+            <strong class="stat-value" id="stat-due-soon">0</strong>
+            <span class="stat-hint">Dentro de los próximos 7 días</span>
+          </button>
+
+          <button class="stat-card" type="button" disabled>
+            <span class="stat-label">Aporte esperado</span>
+            <strong class="stat-value" id="stat-expected">$0</strong>
+            <span class="stat-hint">Valor total esperado</span>
+          </button>
+
+          <button class="stat-card" type="button" disabled>
+            <span class="stat-label">Aporte recibido</span>
+            <strong class="stat-value" id="stat-received">$0</strong>
+            <span class="stat-hint">Valor total recibido</span>
+          </button>
+        </section>
+
+        <section class="panel" aria-labelledby="projects-table-title">
+          <div class="panel-header">
+            <h2 class="panel-title" id="projects-table-title">Lista de proyectos</h2>
+            <span class="text-muted" id="project-count-label">0 proyectos</span>
+          </div>
+
+          <div class="toolbar">
+            <div class="toolbar-grid">
+              <label class="field">
+                <span class="field-label">Buscar</span>
+                <input
+                  class="input"
+                  type="search"
+                  placeholder="Nombre, tipo o estado"
+                  disabled
+                />
+              </label>
+
+              <label class="field">
+                <span class="field-label">Tipo</span>
+                <select class="select" disabled>
+                  <option>Todos los tipos</option>
+                </select>
+              </label>
+
+              <label class="field">
+                <span class="field-label">Estado</span>
+                <select class="select" disabled>
+                  <option>Estados activos</option>
+                </select>
+              </label>
+
+              <label class="field">
+                <span class="field-label">Aporte</span>
+                <select class="select" disabled>
+                  <option>Todos</option>
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <div class="table-scroll">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Tipo</th>
+                  <th>Estado</th>
+                  <th>Fecha de inicio</th>
+                  <th>Próxima fecha</th>
+                  <th>Última actualización</th>
+                  <th>Aporte</th>
+                  <th>Avance</th>
+                </tr>
+              </thead>
+              <tbody id="projects-table-body"></tbody>
+            </table>
+          </div>
+
+          <footer class="table-footer">
+            <span id="table-result-label">Mostrando la vista inicial</span>
+            <span>Filtros, ordenamiento y paginación se activarán en el Bloque 5.</span>
+          </footer>
+        </section>
+
+        <section class="service-banner" aria-label="Estado técnico">
+          <span class="technical-status" id="technical-status" role="status">
+            Comprobando servicios locales
+          </span>
+          <span id="app-version"></span>
+        </section>
+      </div>
     </main>
 
+    <script src="./components/modal.js" defer></script>
+    <script src="./components/status-badge.js" defer></script>
+    <script src="./components/progress-bar.js" defer></script>
     <script src="./services/ipc-service.js" defer></script>
     <script src="./modules/proyectos/proyectos-service.js" defer></script>
     <script src="./modules/proyectos/proyectos-state.js" defer></script>

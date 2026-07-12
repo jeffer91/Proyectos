@@ -1,13 +1,13 @@
 {
   "name": "gestor-proyectos-jeff",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Aplicación de escritorio para gestionar proyectos, avances y documentos.",
   "main": "electron/main.js",
   "type": "commonjs",
   "scripts": {
     "start": "electron .",
     "dev": "electron .",
-    "check": "node --check electron/main.js && node --check electron/preload.js && node --check electron/services/database-service.js && node --check electron/ipc/proyectos-ipc.js && node --check electron/ipc/archivos-ipc.js && node --check electron/ipc/ventana-ipc.js && node --check database/repositories/proyectos-repository.js && node --check database/repositories/tipos-repository.js && node --check database/repositories/archivos-repository.js && node --check src/services/ipc-service.js && node --check src/modules/proyectos/proyectos-service.js && node --check src/modules/proyectos/proyectos-state.js && node --check src/app.js"
+    "check": "node --check electron/main.js && node --check electron/preload.js && node --check electron/services/database-service.js && node --check electron/ipc/proyectos-ipc.js && node --check electron/ipc/archivos-ipc.js && node --check electron/ipc/ventana-ipc.js && node --check database/repositories/proyectos-repository.js && node --check database/repositories/tipos-repository.js && node --check database/repositories/archivos-repository.js && node --check src/components/modal.js && node --check src/components/status-badge.js && node --check src/components/progress-bar.js && node --check src/services/ipc-service.js && node --check src/modules/proyectos/proyectos-service.js && node --check src/modules/proyectos/proyectos-state.js && node --check src/app.js"
   },
   "keywords": [
     "electron",

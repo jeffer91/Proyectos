@@ -4,19 +4,20 @@ Aplicación de escritorio para gestionar proyectos personales, su avance, fechas
 
 ## Estado actual
 
-**Bloque 3 completado:** comunicación segura entre la interfaz, Electron y la base local.
+**Bloque 4 completado:** diseño general y componentes visuales reutilizables.
 
 La aplicación ya incluye:
 
 - Inicio seguro de Electron con aislamiento de contexto.
-- Base SQLite local creada automáticamente.
-- Migraciones versionadas para conservar la información.
+- Base SQLite local y migraciones versionadas.
 - Repositorios para proyectos, tipos y metadatos de archivos.
 - Canales IPC separados para proyectos, archivos y ventana.
-- API limitada mediante `preload.js`, sin exponer Node.js al navegador.
-- Servicios del lado de la interfaz para consumir la base local.
-- Estado central del módulo Proyectos con filtros, ordenamiento y paginación preparados.
-- Comprobación automática de Electron, SQLite e IPC al abrir la aplicación.
+- API limitada mediante `preload.js`.
+- Estado central del módulo Proyectos.
+- Diseño claro y adaptable para escritorio y pantallas pequeñas.
+- Indicadores superiores, barra de filtros y tabla principal.
+- Componentes reutilizables para ventanas emergentes, estados y barras de avance.
+- Vista inicial conectada a los datos reales guardados en SQLite.
 
 ## Requisitos
 
@@ -49,7 +50,7 @@ Al iniciar, Electron crea el archivo `proyectos.db` dentro de la carpeta privada
 <userData>/database/proyectos.db
 ```
 
-La ubicación depende del sistema operativo. La base, los documentos y los datos personales no se guardan dentro del repositorio.
+La base, los documentos y los datos personales no se guardan dentro del repositorio.
 
 ## Estructura actual
 
@@ -78,6 +79,15 @@ Proyectos/
 └── src/
     ├── index.html
     ├── app.js
+    ├── styles/
+    │   ├── variables.css
+    │   ├── global.css
+    │   ├── layout.css
+    │   └── components.css
+    ├── components/
+    │   ├── modal.js
+    │   ├── status-badge.js
+    │   └── progress-bar.js
     ├── services/
     │   └── ipc-service.js
     └── modules/
@@ -88,4 +98,4 @@ Proyectos/
 
 ## Próximo bloque
 
-El Bloque 4 incorporará el diseño general, los estilos y los componentes visuales reutilizables.
+El Bloque 5 activará la pantalla completa de Proyectos: creación por pop-up, buscador, filtros, ordenamiento, indicadores interactivos y paginación.
