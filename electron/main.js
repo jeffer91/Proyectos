@@ -6,6 +6,7 @@ const {
   initializeDatabase,
   closeDatabase
 } = require("./services/database-service");
+const { initializeProjectStorage } = require("./services/project-storage-service");
 const { registerProyectosIpc } = require("./ipc/proyectos-ipc");
 const { registerArchivosIpc } = require("./ipc/archivos-ipc");
 const { registerVentanaIpc } = require("./ipc/ventana-ipc");
@@ -16,9 +17,7 @@ let applicationReady = false;
 let unregisterIpcHandlers = null;
 
 function registerApplicationIpc() {
-  if (unregisterIpcHandlers) {
-    return;
-  }
+  if (unregisterIpcHandlers) return;
 
   const unregisterCallbacks = [
     registerProyectosIpc(),
@@ -34,7 +33,6 @@ function registerApplicationIpc() {
         console.error("No se pudo retirar un grupo de canales IPC:", error);
       }
     }
-
     unregisterIpcHandlers = null;
   };
 }
@@ -62,28 +60,19 @@ function createMainWindow() {
   void mainWindow.loadFile(path.join(__dirname, "..", "src", "index.html"));
 
   mainWindow.once("ready-to-show", () => {
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.show();
-    }
+    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.show();
   });
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    if (/^https?:\/\//i.test(url)) {
-      void shell.openExternal(url);
-    }
-
+    if (/^https?:\/\//i.test(url)) void shell.openExternal(url);
     return { action: "deny" };
   });
 
   mainWindow.webContents.on("will-navigate", (event, url) => {
     const currentUrl = mainWindow?.webContents.getURL();
-
     if (currentUrl && url !== currentUrl) {
       event.preventDefault();
-
-      if (/^https?:\/\//i.test(url)) {
-        void shell.openExternal(url);
-      }
+      if (/^https?:\/\//i.test(url)) void shell.openExternal(url);
     }
   });
 
@@ -94,31 +83,26 @@ function createMainWindow() {
 
 async function startApplication() {
   try {
-    initializeDatabase({ userDataPath: app.getPath("userData") });
+    const userDataPath = app.getPath("userData");
+    initializeDatabase({ userDataPath });
+    initializeProjectStorage({ userDataPath });
     registerApplicationIpc();
     applicationReady = true;
     createMainWindow();
   } catch (error) {
     console.error("No se pudo iniciar la aplicación:", error);
-
     dialog.showErrorBox(
       "No se pudo iniciar Proyectos",
       `La aplicación no pudo preparar sus servicios locales.\n\n${error.message}`
     );
-
     app.quit();
   }
 }
 
 app.whenReady().then(() => {
   void startApplication();
-
   app.on("activate", () => {
-    if (
-      applicationReady &&
-      BrowserWindow.getAllWindows().length === 0 &&
-      !isQuitting
-    ) {
+    if (applicationReady && BrowserWindow.getAllWindows().length === 0 && !isQuitting) {
       createMainWindow();
     }
   });
@@ -127,18 +111,12 @@ app.whenReady().then(() => {
 app.on("before-quit", () => {
   isQuitting = true;
   applicationReady = false;
-
-  if (unregisterIpcHandlers) {
-    unregisterIpcHandlers();
-  }
-
+  if (unregisterIpcHandlers) unregisterIpcHandlers();
   closeDatabase();
 });
 
 app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") {
-    app.quit();
-  }
+  if (process.platform !== "darwin") app.quit();
 });
 
 process.on("uncaughtException", (error) => {
