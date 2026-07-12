@@ -51,7 +51,6 @@ const api = Object.freeze({
     listarPorProyecto: (projectId) =>
       invoke("archivos:listar-por-proyecto", projectId),
     obtener: (fileId) => invoke("archivos:obtener", fileId),
-    registrar: (metadata) => invoke("archivos:registrar", metadata),
     importar: (projectId) => invoke("archivos:importar", projectId),
     abrir: (fileId) => invoke("archivos:abrir", fileId),
     mostrarEnCarpeta: (fileId) => invoke("archivos:mostrar-en-carpeta", fileId),
