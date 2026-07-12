@@ -63,6 +63,21 @@
   cursor: pointer;
 }
 
+.project-row.is-archived {
+  background: var(--color-surface-soft);
+  opacity: 0.76;
+}
+
+.project-row.is-archived:hover {
+  background: var(--color-neutral-soft);
+  opacity: 1;
+}
+
+.project-row.is-archived .table-secondary {
+  color: var(--color-warning);
+  font-weight: 700;
+}
+
 .project-row:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: -2px;
