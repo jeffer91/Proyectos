@@ -15,7 +15,7 @@
       economic: "todos",
       includeCompleted: false,
       includeArchived: false,
-      quickFilter: "total"
+      quickFilter: "custom"
     };
   }
 
@@ -71,8 +71,12 @@
     }
   }
 
+  function normalizeArray(value) {
+    return Array.isArray(value) ? clone(value) : [];
+  }
+
   function assignArray(key, value) {
-    state[key] = Array.isArray(value) ? clone(value) : [];
+    state[key] = normalizeArray(value);
     notify();
   }
 
@@ -112,6 +116,16 @@
       return () => {
         listeners.delete(listener);
       };
+    },
+
+    replaceData({ projects = [], types = [], summary = {} } = {}) {
+      state.projects = normalizeArray(projects);
+      state.types = normalizeArray(types);
+      state.summary = {
+        ...createDefaultSummary(),
+        ...(summary && typeof summary === "object" ? summary : {})
+      };
+      notify();
     },
 
     setProjects(projects) {
@@ -196,7 +210,9 @@
     },
 
     setLoading(value) {
-      state.loading = value === true;
+      const nextValue = value === true;
+      if (state.loading === nextValue) return;
+      state.loading = nextValue;
       notify();
     },
 
