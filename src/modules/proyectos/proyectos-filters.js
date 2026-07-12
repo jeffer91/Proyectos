@@ -55,7 +55,7 @@
     const economic = String(filters.economic || "todos");
     const includeCompleted = filters.includeCompleted === true;
     const includeArchived = filters.includeArchived === true;
-    const quickFilter = String(filters.quickFilter || "total");
+    const quickFilter = String(filters.quickFilter || "custom");
 
     return (Array.isArray(projects) ? projects : []).filter((project) => {
       if (!includeArchived && project.archivado === true) {
@@ -142,7 +142,7 @@
       }
     }
 
-    let quickFilter = "total";
+    let quickFilter = "custom";
     let searchTimer = null;
 
     function getValues() {
@@ -201,7 +201,7 @@
       elements.economic.value = "todos";
       elements.completed.checked = false;
       elements.archived.checked = false;
-      quickFilter = "total";
+      quickFilter = "custom";
 
       if (emitChange) {
         emit({ preserveQuickFilter: true });
@@ -235,9 +235,14 @@
       reset({ emitChange: false });
       quickFilter = name;
 
-      if (name === "expected") {
+      if (name === "total") {
+        elements.completed.checked = true;
+        elements.archived.checked = true;
+      } else if (name === "expected") {
+        elements.completed.checked = true;
         elements.economic.value = "con_aporte";
       } else if (name === "received") {
+        elements.completed.checked = true;
         elements.economic.value = "recibido";
       }
 
