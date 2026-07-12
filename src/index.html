@@ -15,128 +15,133 @@
     <link rel="stylesheet" href="./styles/layout.css" />
     <link rel="stylesheet" href="./styles/components.css" />
     <link rel="stylesheet" href="./styles/proyectos.css" />
+    <link rel="stylesheet" href="./styles/proyecto-detalle.css" />
   </head>
   <body>
     <main class="app-shell">
-      <div class="page-container content-stack">
-        <header class="page-header">
-          <div class="page-heading">
-            <h1 class="page-title">Proyectos</h1>
-            <p class="page-subtitle">
-              Revisa el avance, las fechas y el aporte de todos tus proyectos desde una sola pantalla.
-            </p>
-          </div>
-          <div class="page-actions">
-            <button class="button button-primary" id="new-project-button" type="button">
-              Nuevo proyecto
-            </button>
-          </div>
-        </header>
-
-        <section class="stats-grid" aria-label="Resumen de proyectos">
-          <button class="stat-card" type="button" data-stat-filter="total">
-            <span class="stat-label">Total de proyectos</span>
-            <strong class="stat-value" id="stat-total">0</strong>
-            <span class="stat-hint">Todos los proyectos guardados</span>
-          </button>
-          <button class="stat-card" type="button" data-stat-filter="dueSoon">
-            <span class="stat-label">Próximos a vencer</span>
-            <strong class="stat-value" id="stat-due-soon">0</strong>
-            <span class="stat-hint">Dentro de los próximos 7 días</span>
-          </button>
-          <button class="stat-card" type="button" data-stat-filter="expected">
-            <span class="stat-label">Aporte esperado</span>
-            <strong class="stat-value" id="stat-expected">$0</strong>
-            <span class="stat-hint">Proyectos con aporte</span>
-          </button>
-          <button class="stat-card" type="button" data-stat-filter="received">
-            <span class="stat-label">Aporte recibido</span>
-            <strong class="stat-value" id="stat-received">$0</strong>
-            <span class="stat-hint">Proyectos con dinero recibido</span>
-          </button>
-        </section>
-
-        <section class="panel" aria-labelledby="projects-table-title">
-          <div class="panel-header">
-            <h2 class="panel-title" id="projects-table-title">Lista de proyectos</h2>
-            <span class="text-muted" id="project-count-label">0 proyectos</span>
-          </div>
-
-          <div class="toolbar">
-            <div class="toolbar-grid toolbar-grid-projects">
-              <label class="field toolbar-search">
-                <span class="field-label">Buscar</span>
-                <input class="input" id="project-search" type="search" placeholder="Nombre, tipo o estado" autocomplete="off" />
-              </label>
-              <label class="field">
-                <span class="field-label">Tipo</span>
-                <select class="select" id="project-type-filter">
-                  <option value="">Todos los tipos</option>
-                </select>
-              </label>
-              <label class="field">
-                <span class="field-label">Estado</span>
-                <select class="select" id="project-status-filter">
-                  <option value="">Estados activos</option>
-                  <option value="pendiente">Pendiente</option>
-                  <option value="en_proceso">En proceso</option>
-                  <option value="pausado">Pausado</option>
-                  <option value="completado">Completado</option>
-                </select>
-              </label>
-              <label class="field">
-                <span class="field-label">Aporte</span>
-                <select class="select" id="project-economic-filter">
-                  <option value="todos">Todos</option>
-                  <option value="con_aporte">Con aporte</option>
-                  <option value="sin_aporte">Sin aporte</option>
-                </select>
-              </label>
-              <label class="field">
-                <span class="field-label">Desde</span>
-                <input class="input" id="project-date-from" type="date" />
-              </label>
-              <label class="field">
-                <span class="field-label">Hasta</span>
-                <input class="input" id="project-date-to" type="date" />
-              </label>
-              <label class="checkbox-field">
-                <input id="project-completed-filter" type="checkbox" />
-                <span>Mostrar completados</span>
-              </label>
-              <button class="button button-secondary" id="clear-filters-button" type="button">Limpiar filtros</button>
+      <section id="projects-list-view">
+        <div class="page-container content-stack">
+          <header class="page-header">
+            <div class="page-heading">
+              <h1 class="page-title">Proyectos</h1>
+              <p class="page-subtitle">
+                Revisa el avance, las fechas y el aporte de todos tus proyectos desde una sola pantalla.
+              </p>
             </div>
-          </div>
+            <div class="page-actions">
+              <button class="button button-primary" id="new-project-button" type="button">
+                Nuevo proyecto
+              </button>
+            </div>
+          </header>
 
-          <div class="table-scroll">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th><button class="sort-button" type="button" data-sort-field="nombre">Nombre</button></th>
-                  <th><button class="sort-button" type="button" data-sort-field="tipoNombre">Tipo</button></th>
-                  <th><button class="sort-button" type="button" data-sort-field="estado">Estado</button></th>
-                  <th><button class="sort-button" type="button" data-sort-field="fechaInicio">Fecha de inicio</button></th>
-                  <th><button class="sort-button" type="button" data-sort-field="proximaFecha">Próxima fecha</button></th>
-                  <th><button class="sort-button" type="button" data-sort-field="ultimaActualizacion">Última actualización</button></th>
-                  <th><button class="sort-button" type="button" data-sort-field="aporte">Aporte</button></th>
-                  <th><button class="sort-button" type="button" data-sort-field="avance">Avance</button></th>
-                </tr>
-              </thead>
-              <tbody id="projects-table-body"></tbody>
-            </table>
-          </div>
+          <section class="stats-grid" aria-label="Resumen de proyectos">
+            <button class="stat-card" type="button" data-stat-filter="total">
+              <span class="stat-label">Total de proyectos</span>
+              <strong class="stat-value" id="stat-total">0</strong>
+              <span class="stat-hint">Todos los proyectos guardados</span>
+            </button>
+            <button class="stat-card" type="button" data-stat-filter="dueSoon">
+              <span class="stat-label">Próximos a vencer</span>
+              <strong class="stat-value" id="stat-due-soon">0</strong>
+              <span class="stat-hint">Dentro de los próximos 7 días</span>
+            </button>
+            <button class="stat-card" type="button" data-stat-filter="expected">
+              <span class="stat-label">Aporte esperado</span>
+              <strong class="stat-value" id="stat-expected">$0</strong>
+              <span class="stat-hint">Proyectos con aporte</span>
+            </button>
+            <button class="stat-card" type="button" data-stat-filter="received">
+              <span class="stat-label">Aporte recibido</span>
+              <strong class="stat-value" id="stat-received">$0</strong>
+              <span class="stat-hint">Proyectos con dinero recibido</span>
+            </button>
+          </section>
 
-          <footer class="table-footer">
-            <span id="table-result-label">Sin resultados</span>
-            <div id="pagination-container"></div>
-          </footer>
-        </section>
+          <section class="panel" aria-labelledby="projects-table-title">
+            <div class="panel-header">
+              <h2 class="panel-title" id="projects-table-title">Lista de proyectos</h2>
+              <span class="text-muted" id="project-count-label">0 proyectos</span>
+            </div>
 
-        <section class="service-banner" aria-label="Estado técnico">
-          <span class="technical-status" id="technical-status" role="status">Comprobando servicios locales</span>
-          <span id="app-version"></span>
-        </section>
-      </div>
+            <div class="toolbar">
+              <div class="toolbar-grid toolbar-grid-projects">
+                <label class="field toolbar-search">
+                  <span class="field-label">Buscar</span>
+                  <input class="input" id="project-search" type="search" placeholder="Nombre, tipo o estado" autocomplete="off" />
+                </label>
+                <label class="field">
+                  <span class="field-label">Tipo</span>
+                  <select class="select" id="project-type-filter">
+                    <option value="">Todos los tipos</option>
+                  </select>
+                </label>
+                <label class="field">
+                  <span class="field-label">Estado</span>
+                  <select class="select" id="project-status-filter">
+                    <option value="">Estados activos</option>
+                    <option value="pendiente">Pendiente</option>
+                    <option value="en_proceso">En proceso</option>
+                    <option value="pausado">Pausado</option>
+                    <option value="completado">Completado</option>
+                  </select>
+                </label>
+                <label class="field">
+                  <span class="field-label">Aporte</span>
+                  <select class="select" id="project-economic-filter">
+                    <option value="todos">Todos</option>
+                    <option value="con_aporte">Con aporte</option>
+                    <option value="sin_aporte">Sin aporte</option>
+                  </select>
+                </label>
+                <label class="field">
+                  <span class="field-label">Desde</span>
+                  <input class="input" id="project-date-from" type="date" />
+                </label>
+                <label class="field">
+                  <span class="field-label">Hasta</span>
+                  <input class="input" id="project-date-to" type="date" />
+                </label>
+                <label class="checkbox-field">
+                  <input id="project-completed-filter" type="checkbox" />
+                  <span>Mostrar completados</span>
+                </label>
+                <button class="button button-secondary" id="clear-filters-button" type="button">Limpiar filtros</button>
+              </div>
+            </div>
+
+            <div class="table-scroll">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th><button class="sort-button" type="button" data-sort-field="nombre">Nombre</button></th>
+                    <th><button class="sort-button" type="button" data-sort-field="tipoNombre">Tipo</button></th>
+                    <th><button class="sort-button" type="button" data-sort-field="estado">Estado</button></th>
+                    <th><button class="sort-button" type="button" data-sort-field="fechaInicio">Fecha de inicio</button></th>
+                    <th><button class="sort-button" type="button" data-sort-field="proximaFecha">Próxima fecha</button></th>
+                    <th><button class="sort-button" type="button" data-sort-field="ultimaActualizacion">Última actualización</button></th>
+                    <th><button class="sort-button" type="button" data-sort-field="aporte">Aporte</button></th>
+                    <th><button class="sort-button" type="button" data-sort-field="avance">Avance</button></th>
+                  </tr>
+                </thead>
+                <tbody id="projects-table-body"></tbody>
+              </table>
+            </div>
+
+            <footer class="table-footer">
+              <span id="table-result-label">Sin resultados</span>
+              <div id="pagination-container"></div>
+            </footer>
+          </section>
+
+          <section class="service-banner" aria-label="Estado técnico">
+            <span class="technical-status" id="technical-status" role="status">Comprobando servicios locales</span>
+            <span id="app-version"></span>
+          </section>
+        </div>
+      </section>
+
+      <section id="project-detail-view" hidden></section>
     </main>
 
     <script src="./utils/dates.js" defer></script>
@@ -154,6 +159,9 @@
     <script src="./modules/proyectos/proyectos-stats.js" defer></script>
     <script src="./modules/proyectos/proyectos-table.js" defer></script>
     <script src="./modules/proyectos/proyecto-create-modal.js" defer></script>
+    <script src="./modules/proyecto/proyecto-edit-modal.js" defer></script>
+    <script src="./modules/proyecto/proyecto-documents.js" defer></script>
+    <script src="./modules/proyecto/proyecto-page.js" defer></script>
     <script src="./modules/proyectos/proyectos-page.js" defer></script>
     <script src="./app.js" defer></script>
   </body>
