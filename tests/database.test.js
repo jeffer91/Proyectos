@@ -27,6 +27,7 @@ test("migraciones, proyectos, hitos y archivos funcionan juntos", async (t) => {
     .map((row) => row.nombre);
 
   assert.deepEqual(migrations, ["001-inicial.sql", "002-hitos.sql"]);
+  assert.equal(databaseService.verifyDatabaseIntegrity(db), true);
 
   const type = tiposRepository.create("Desarrollo");
   const project = proyectosRepository.create({
@@ -62,6 +63,17 @@ test("migraciones, proyectos, hitos y archivos funcionan juntos", async (t) => {
   assert.equal(updatedProject.avance, 100);
   assert.equal(updatedProject.proximaFecha, null);
 
+  proyectosRepository.update(project.id, {
+    aporteEsperadoCentavos: 120000,
+    aporteRecibidoCentavos: 50000
+  });
+
+  let summary = proyectosRepository.getSummary();
+  assert.equal(summary.total, 1);
+  assert.equal(summary.activos, 1);
+  assert.equal(summary.aporteEsperadoCentavos, 120000);
+  assert.equal(summary.aporteRecibidoCentavos, 50000);
+
   const file = archivosRepository.create({
     proyectoId: project.id,
     nombreOriginal: "Informe.pdf",
@@ -86,8 +98,20 @@ test("migraciones, proyectos, hitos y archivos funcionan juntos", async (t) => {
     1
   );
 
+  summary = proyectosRepository.getSummary();
+  assert.equal(summary.total, 1);
+  assert.equal(summary.activos, 0);
+  assert.equal(summary.aporteEsperadoCentavos, 0);
+  assert.equal(summary.aporteRecibidoCentavos, 0);
+
+  assert.throws(
+    () => databaseService.runInTransaction(async () => true),
+    (error) => error?.code === "ASYNC_TRANSACTION_NOT_SUPPORTED"
+  );
+
   assert.equal(hitosRepository.findById(firstMilestone.id)?.proyectoId, project.id);
   assert.equal(proyectosRepository.remove(project.id), true);
   assert.equal(hitosRepository.findById(firstMilestone.id), null);
   assert.equal(archivosRepository.findById(file.id), null);
+  assert.equal(databaseService.verifyDatabaseIntegrity(db), true);
 });
