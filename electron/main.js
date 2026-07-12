@@ -6,9 +6,38 @@ const {
   initializeDatabase,
   closeDatabase
 } = require("./services/database-service");
+const { registerProyectosIpc } = require("./ipc/proyectos-ipc");
+const { registerArchivosIpc } = require("./ipc/archivos-ipc");
+const { registerVentanaIpc } = require("./ipc/ventana-ipc");
 
 let mainWindow = null;
 let isQuitting = false;
+let applicationReady = false;
+let unregisterIpcHandlers = null;
+
+function registerApplicationIpc() {
+  if (unregisterIpcHandlers) {
+    return;
+  }
+
+  const unregisterCallbacks = [
+    registerProyectosIpc(),
+    registerArchivosIpc(),
+    registerVentanaIpc()
+  ];
+
+  unregisterIpcHandlers = () => {
+    for (const unregister of unregisterCallbacks.reverse()) {
+      try {
+        unregister();
+      } catch (error) {
+        console.error("No se pudo retirar un grupo de canales IPC:", error);
+      }
+    }
+
+    unregisterIpcHandlers = null;
+  };
+}
 
 function createMainWindow() {
   mainWindow = new BrowserWindow({
@@ -30,7 +59,7 @@ function createMainWindow() {
     }
   });
 
-  mainWindow.loadFile(path.join(__dirname, "..", "src", "index.html"));
+  void mainWindow.loadFile(path.join(__dirname, "..", "src", "index.html"));
 
   mainWindow.once("ready-to-show", () => {
     if (mainWindow && !mainWindow.isDestroyed()) {
@@ -66,13 +95,15 @@ function createMainWindow() {
 async function startApplication() {
   try {
     initializeDatabase({ userDataPath: app.getPath("userData") });
+    registerApplicationIpc();
+    applicationReady = true;
     createMainWindow();
   } catch (error) {
-    console.error("No se pudo iniciar la base de datos:", error);
+    console.error("No se pudo iniciar la aplicación:", error);
 
     dialog.showErrorBox(
       "No se pudo iniciar Proyectos",
-      `La base de datos local no pudo prepararse.\n\n${error.message}`
+      `La aplicación no pudo preparar sus servicios locales.\n\n${error.message}`
     );
 
     app.quit();
@@ -83,7 +114,11 @@ app.whenReady().then(() => {
   void startApplication();
 
   app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0 && !isQuitting) {
+    if (
+      applicationReady &&
+      BrowserWindow.getAllWindows().length === 0 &&
+      !isQuitting
+    ) {
       createMainWindow();
     }
   });
@@ -91,6 +126,12 @@ app.whenReady().then(() => {
 
 app.on("before-quit", () => {
   isQuitting = true;
+  applicationReady = false;
+
+  if (unregisterIpcHandlers) {
+    unregisterIpcHandlers();
+  }
+
   closeDatabase();
 });
 
