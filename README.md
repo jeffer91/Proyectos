@@ -4,20 +4,22 @@ Aplicación de escritorio para gestionar proyectos personales, su avance, fechas
 
 ## Estado actual
 
-**Bloque 4 completado:** diseño general y componentes visuales reutilizables.
+**Bloque 5 completado:** pantalla principal de Proyectos completamente funcional.
 
-La aplicación ya incluye:
+La aplicación ya permite:
 
-- Inicio seguro de Electron con aislamiento de contexto.
-- Base SQLite local y migraciones versionadas.
-- Repositorios para proyectos, tipos y metadatos de archivos.
-- Canales IPC separados para proyectos, archivos y ventana.
-- API limitada mediante `preload.js`.
-- Estado central del módulo Proyectos.
-- Diseño claro y adaptable para escritorio y pantallas pequeñas.
-- Indicadores superiores, barra de filtros y tabla principal.
-- Componentes reutilizables para ventanas emergentes, estados y barras de avance.
-- Vista inicial conectada a los datos reales guardados en SQLite.
+- Crear proyectos mediante un pop-up con nombre y tipo.
+- Seleccionar tipos existentes o crear tipos nuevos.
+- Asignar automáticamente fecha de inicio, estado Pendiente y avance 0 %.
+- Buscar por nombre, tipo o estado.
+- Filtrar por tipo, estado, rango de fechas y aporte económico.
+- Mostrar u ocultar proyectos completados.
+- Ordenar la tabla desde todos sus encabezados.
+- Cambiar entre 10, 25, 50 o todas las filas.
+- Usar los indicadores superiores como filtros rápidos.
+- Abrir cualquier proyecto pulsando su fila.
+- Resaltar fechas vencidas y mostrar aporte recibido/esperado.
+- Trabajar con datos reales guardados en SQLite.
 
 ## Requisitos
 
@@ -44,7 +46,7 @@ npm run check
 
 ## Base de datos local
 
-Al iniciar, Electron crea el archivo `proyectos.db` dentro de la carpeta privada de datos de la aplicación:
+La aplicación crea automáticamente:
 
 ```text
 <userData>/database/proyectos.db
@@ -52,50 +54,32 @@ Al iniciar, Electron crea el archivo `proyectos.db` dentro de la carpeta privada
 
 La base, los documentos y los datos personales no se guardan dentro del repositorio.
 
-## Estructura actual
+## Estructura del módulo Proyectos
 
 ```text
-Proyectos/
-├── package.json
-├── .gitignore
-├── README.md
-├── database/
-│   ├── schema.sql
-│   ├── migrations/
-│   │   └── 001-inicial.sql
-│   └── repositories/
-│       ├── proyectos-repository.js
-│       ├── tipos-repository.js
-│       └── archivos-repository.js
-├── electron/
-│   ├── main.js
-│   ├── preload.js
-│   ├── ipc/
-│   │   ├── proyectos-ipc.js
-│   │   ├── archivos-ipc.js
-│   │   └── ventana-ipc.js
-│   └── services/
-│       └── database-service.js
-└── src/
-    ├── index.html
-    ├── app.js
-    ├── styles/
-    │   ├── variables.css
-    │   ├── global.css
-    │   ├── layout.css
-    │   └── components.css
-    ├── components/
-    │   ├── modal.js
-    │   ├── status-badge.js
-    │   └── progress-bar.js
-    ├── services/
-    │   └── ipc-service.js
-    └── modules/
-        └── proyectos/
-            ├── proyectos-service.js
-            └── proyectos-state.js
+src/
+├── components/
+│   ├── modal.js
+│   ├── status-badge.js
+│   ├── progress-bar.js
+│   └── pagination.js
+├── styles/
+│   ├── variables.css
+│   ├── global.css
+│   ├── layout.css
+│   ├── components.css
+│   └── proyectos.css
+└── modules/
+    └── proyectos/
+        ├── proyectos-service.js
+        ├── proyectos-state.js
+        ├── proyectos-filters.js
+        ├── proyectos-stats.js
+        ├── proyectos-table.js
+        ├── proyecto-create-modal.js
+        └── proyectos-page.js
 ```
 
 ## Próximo bloque
 
-El Bloque 5 activará la pantalla completa de Proyectos: creación por pop-up, buscador, filtros, ordenamiento, indicadores interactivos y paginación.
+El Bloque 6 preparará el almacenamiento físico de Word y PDF, las carpetas privadas por proyecto, utilidades, validaciones y pruebas finales de esta primera etapa.
