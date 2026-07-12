@@ -1,16 +1,27 @@
 "use strict";
 
 (function exposeProyectosStats(global) {
-  const formatter = new Intl.NumberFormat("es-EC", {
+  const fallbackFormatter = new Intl.NumberFormat("es-EC", {
     style: "currency",
     currency: "USD",
     minimumFractionDigits: 0,
     maximumFractionDigits: 2
   });
 
+  const VALUE_SELECTORS = Object.freeze({
+    total: "#stat-total",
+    dueSoon: "#stat-due-soon",
+    expected: "#stat-expected",
+    received: "#stat-received"
+  });
+
   function currency(cents) {
+    if (global.AppCurrency?.formatCurrency) {
+      return global.AppCurrency.formatCurrency(cents);
+    }
+
     const value = Number(cents || 0) / 100;
-    return formatter.format(Number.isFinite(value) ? value : 0);
+    return fallbackFormatter.format(Number.isFinite(value) ? value : 0);
   }
 
   function create({ onSelect } = {}) {
@@ -22,6 +33,7 @@
 
     for (const card of cards) {
       card.disabled = false;
+      card.setAttribute("aria-pressed", "false");
       card.addEventListener("click", () => {
         if (typeof onSelect === "function") {
           onSelect(card.dataset.statFilter || "total");
@@ -31,14 +43,17 @@
 
     function render(summary = {}, activeFilter = "total") {
       const values = {
-        total: summary.total || 0,
-        dueSoon: summary.proximosAVencer || 0,
+        total: Number(summary.total || 0),
+        dueSoon: Number(summary.proximosAVencer || 0),
         expected: currency(summary.aporteEsperadoCentavos),
         received: currency(summary.aporteRecibidoCentavos)
       };
 
       for (const [key, value] of Object.entries(values)) {
-        const element = document.querySelector(`[data-stat-value="${key}"]`);
+        const element = document.querySelector(
+          `[data-stat-value="${key}"]`
+        ) || document.querySelector(VALUE_SELECTORS[key]);
+
         if (element) {
           element.textContent = String(value);
         }
