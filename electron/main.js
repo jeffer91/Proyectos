@@ -1,9 +1,14 @@
 "use strict";
 
-const { app, BrowserWindow, shell } = require("electron");
+const { app, BrowserWindow, dialog, shell } = require("electron");
 const path = require("path");
+const {
+  initializeDatabase,
+  closeDatabase
+} = require("./services/database-service");
 
 let mainWindow = null;
+let isQuitting = false;
 
 function createMainWindow() {
   mainWindow = new BrowserWindow({
@@ -58,14 +63,35 @@ function createMainWindow() {
   });
 }
 
+async function startApplication() {
+  try {
+    initializeDatabase({ userDataPath: app.getPath("userData") });
+    createMainWindow();
+  } catch (error) {
+    console.error("No se pudo iniciar la base de datos:", error);
+
+    dialog.showErrorBox(
+      "No se pudo iniciar Proyectos",
+      `La base de datos local no pudo prepararse.\n\n${error.message}`
+    );
+
+    app.quit();
+  }
+}
+
 app.whenReady().then(() => {
-  createMainWindow();
+  void startApplication();
 
   app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
+    if (BrowserWindow.getAllWindows().length === 0 && !isQuitting) {
       createMainWindow();
     }
   });
+});
+
+app.on("before-quit", () => {
+  isQuitting = true;
+  closeDatabase();
 });
 
 app.on("window-all-closed", () => {

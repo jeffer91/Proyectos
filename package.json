@@ -1,19 +1,20 @@
 {
   "name": "gestor-proyectos-jeff",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Aplicación de escritorio para gestionar proyectos, avances y documentos.",
   "main": "electron/main.js",
   "type": "commonjs",
   "scripts": {
     "start": "electron .",
     "dev": "electron .",
-    "check": "node --check electron/main.js && node --check electron/preload.js && node --check src/app.js"
+    "check": "node --check electron/main.js && node --check electron/preload.js && node --check electron/services/database-service.js && node --check database/repositories/proyectos-repository.js && node --check database/repositories/tipos-repository.js && node --check database/repositories/archivos-repository.js && node --check src/app.js"
   },
   "keywords": [
     "electron",
     "proyectos",
     "gestion",
-    "documentos"
+    "documentos",
+    "sqlite"
   ],
   "author": "Jefferson Villarreal",
   "license": "MIT",
@@ -21,6 +22,6 @@
     "electron": "latest"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22.13"
   }
 }
