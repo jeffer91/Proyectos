@@ -59,6 +59,26 @@
     renombrarTipo(typeId, name) {
       return requireIpcService().call("tipos", "renombrar", typeId, name);
     },
+    listarHitos(projectId) {
+      return requireIpcService().call("hitos", "listar", projectId);
+    },
+    obtenerHito(milestoneId) {
+      return requireIpcService().call("hitos", "obtener", milestoneId);
+    },
+    crearHito(payload) {
+      return requireIpcService().call("hitos", "crear", payload);
+    },
+    actualizarHito(milestoneId, changes) {
+      return requireIpcService().call(
+        "hitos",
+        "actualizar",
+        milestoneId,
+        changes && typeof changes === "object" ? changes : {}
+      );
+    },
+    eliminarHito(milestoneId) {
+      return requireIpcService().call("hitos", "eliminar", milestoneId);
+    },
     listarArchivos(projectId) {
       return requireIpcService().call("archivos", "listarPorProyecto", projectId);
     },
