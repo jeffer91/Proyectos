@@ -73,7 +73,10 @@
         global.ProyectosState.selectProject(null);
         await refreshData();
       },
-      async onProjectChanged() {
+      async onProjectChanged(project) {
+        if (project === null) {
+          return;
+        }
         await refreshData();
       }
     });
@@ -234,9 +237,7 @@
           global.ProyectosService.obtenerResumen()
         ]);
 
-        global.ProyectosState.setProjects(projects);
-        global.ProyectosState.setTypes(types);
-        global.ProyectosState.setSummary(summary);
+        global.ProyectosState.replaceData({ projects, types, summary });
         text(
           "app-version",
           `Proyectos ${info.version} · Electron ${info.versions.electron} · Base local activa`
