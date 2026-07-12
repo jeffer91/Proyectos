@@ -84,7 +84,7 @@
       newTypeField.hidden = !isNew;
       newTypeInput.required = isNew;
 
-      if (isNew) {
+      if (isNew && newTypeInput.isConnected) {
         newTypeInput.focus();
       }
     }
@@ -130,6 +130,14 @@
 
           const createdType = await global.ProyectosService.crearTipo(typeName);
           typeId = createdType.id;
+
+          const createdOption = document.createElement("option");
+          createdOption.value = String(createdType.id);
+          createdOption.textContent = createdType.nombre;
+          typeSelect.insertBefore(createdOption, newTypeOption);
+          typeSelect.value = String(createdType.id);
+          newTypeField.hidden = true;
+          newTypeInput.required = false;
         } catch (creationError) {
           showError(creationError.message);
           if (button instanceof HTMLButtonElement) {
