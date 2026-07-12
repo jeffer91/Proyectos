@@ -97,7 +97,9 @@ function normalizeFileMetadata(payload = {}) {
 }
 
 function updateDocumentCount(projectId) {
-  setDocumentCount(projectId, archivosRepository.listByProject(projectId).length);
+  const project = getProject(projectId);
+  ensureProjectStructure({ projectId: project.id, projectName: project.nombre });
+  setDocumentCount(project.id, archivosRepository.listByProject(project.id).length);
 }
 
 function getExistingStoredPath(file) {
