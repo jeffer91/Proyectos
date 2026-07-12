@@ -61,6 +61,33 @@ test("crea la estructura privada e importa un PDF sin sobrescribir", async (t) =
   assert.equal(fs.existsSync(second.absolutePath), true);
 });
 
+test("recupera metadata dañada sin bloquear el proyecto", async (t) => {
+  const userDataPath = await fsp.mkdtemp(path.join(os.tmpdir(), "proyectos-metadata-test-"));
+  t.after(async () => fsp.rm(userDataPath, { recursive: true, force: true }));
+
+  projectStorage.initializeProjectStorage({ userDataPath });
+  const firstStructure = projectStorage.ensureProjectStructure({
+    projectId: "project-metadata-1",
+    projectName: "Proyecto con metadata"
+  });
+
+  await fsp.writeFile(firstStructure.paths.metadata, "{contenido dañado", "utf8");
+
+  const recovered = projectStorage.ensureProjectStructure({
+    projectId: "project-metadata-1",
+    projectName: "Proyecto recuperado"
+  });
+  const metadata = projectStorage.readProjectMetadata("project-metadata-1");
+  const backupNames = await fsp.readdir(recovered.paths.backups);
+
+  assert.equal(metadata.projectName, "Proyecto recuperado");
+  assert.equal(metadata.documentCount, 0);
+  assert.equal(
+    backupNames.some((name) => name.startsWith("metadata-corrupt-") && name.endsWith(".json")),
+    true
+  );
+});
+
 test("bloquea extensiones no permitidas y rutas fuera del proyecto", async (t) => {
   const userDataPath = await fsp.mkdtemp(path.join(os.tmpdir(), "proyectos-safe-test-"));
   t.after(async () => fsp.rm(userDataPath, { recursive: true, force: true }));
