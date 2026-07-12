@@ -4,6 +4,7 @@ const fs = require("fs");
 const { ipcMain, shell } = require("electron");
 const proyectosRepository = require("../../database/repositories/proyectos-repository");
 const tiposRepository = require("../../database/repositories/tipos-repository");
+const hitosRepository = require("../../database/repositories/hitos-repository");
 const {
   ensureProjectStructure,
   updateProjectMetadata,
@@ -19,7 +20,12 @@ const CHANNELS = Object.freeze({
   GET_SUMMARY: "proyectos:resumen",
   LIST_TYPES: "tipos:listar",
   CREATE_TYPE: "tipos:crear",
-  RENAME_TYPE: "tipos:renombrar"
+  RENAME_TYPE: "tipos:renombrar",
+  LIST_MILESTONES: "hitos:listar",
+  GET_MILESTONE: "hitos:obtener",
+  CREATE_MILESTONE: "hitos:crear",
+  UPDATE_MILESTONE: "hitos:actualizar",
+  DELETE_MILESTONE: "hitos:eliminar"
 });
 
 function serializeError(error) {
@@ -45,11 +51,19 @@ function registerHandler(channel, callback) {
   ipcMain.handle(channel, safeHandler(channel, callback));
 }
 
-function requireProjectId(value) {
+function requireTextId(value, label) {
   if (typeof value !== "string" || !value.trim()) {
-    throw new Error("El identificador del proyecto es obligatorio.");
+    throw new Error(`${label} es obligatorio.`);
   }
   return value.trim();
+}
+
+function requireProjectId(value) {
+  return requireTextId(value, "El identificador del proyecto");
+}
+
+function requireMilestoneId(value) {
+  return requireTextId(value, "El identificador del hito");
 }
 
 function pickProjectChanges(value) {
@@ -58,6 +72,17 @@ function pickProjectChanges(value) {
     "nombre", "tipoId", "estado", "fechaInicio", "proximaFecha",
     "aporteEsperadoCentavos", "aporteRecibidoCentavos", "avance", "archivado"
   ];
+  const result = {};
+
+  for (const field of allowedFields) {
+    if (Object.prototype.hasOwnProperty.call(source, field)) result[field] = source[field];
+  }
+  return result;
+}
+
+function pickMilestoneChanges(value) {
+  const source = value && typeof value === "object" ? value : {};
+  const allowedFields = ["titulo", "descripcion", "fechaObjetivo", "avance"];
   const result = {};
 
   for (const field of allowedFields) {
@@ -101,7 +126,10 @@ async function removeProjectAndStorage(projectId) {
     try {
       await shell.trashItem(stagedRoot);
     } catch (trashError) {
-      console.error("El proyecto se eliminó de la base, pero su carpeta no pudo enviarse a la Papelera:", trashError);
+      console.error(
+        "El proyecto se eliminó de la base, pero su carpeta no pudo enviarse a la Papelera:",
+        trashError
+      );
     }
   }
 
@@ -153,6 +181,31 @@ function registerProyectosIpc() {
   registerHandler(CHANNELS.LIST_TYPES, () => tiposRepository.list());
   registerHandler(CHANNELS.CREATE_TYPE, (name) => tiposRepository.create(name));
   registerHandler(CHANNELS.RENAME_TYPE, (typeId, name) => tiposRepository.rename(typeId, name));
+
+  registerHandler(CHANNELS.LIST_MILESTONES, (projectId) =>
+    hitosRepository.listByProject(requireProjectId(projectId))
+  );
+  registerHandler(CHANNELS.GET_MILESTONE, (milestoneId) =>
+    hitosRepository.findById(requireMilestoneId(milestoneId))
+  );
+  registerHandler(CHANNELS.CREATE_MILESTONE, (payload = {}) =>
+    hitosRepository.create({
+      proyectoId: requireProjectId(payload?.proyectoId),
+      titulo: payload?.titulo,
+      descripcion: payload?.descripcion,
+      fechaObjetivo: payload?.fechaObjetivo,
+      avance: payload?.avance ?? 0
+    })
+  );
+  registerHandler(CHANNELS.UPDATE_MILESTONE, (milestoneId, changes = {}) =>
+    hitosRepository.update(
+      requireMilestoneId(milestoneId),
+      pickMilestoneChanges(changes)
+    )
+  );
+  registerHandler(CHANNELS.DELETE_MILESTONE, (milestoneId) =>
+    hitosRepository.remove(requireMilestoneId(milestoneId))
+  );
 
   return function unregisterProyectosIpc() {
     for (const channel of Object.values(CHANNELS)) ipcMain.removeHandler(channel);
