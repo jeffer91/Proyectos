@@ -38,22 +38,22 @@
           <section class="stats-grid" aria-label="Resumen de proyectos">
             <button class="stat-card" type="button" data-stat-filter="total">
               <span class="stat-label">Total de proyectos</span>
-              <strong class="stat-value" id="stat-total">0</strong>
-              <span class="stat-hint">Todos los proyectos guardados</span>
+              <strong class="stat-value" id="stat-total" data-stat-value="total">0</strong>
+              <span class="stat-hint">Proyectos sin archivar</span>
             </button>
             <button class="stat-card" type="button" data-stat-filter="dueSoon">
               <span class="stat-label">Próximos a vencer</span>
-              <strong class="stat-value" id="stat-due-soon">0</strong>
+              <strong class="stat-value" id="stat-due-soon" data-stat-value="dueSoon">0</strong>
               <span class="stat-hint">Dentro de los próximos 7 días</span>
             </button>
             <button class="stat-card" type="button" data-stat-filter="expected">
               <span class="stat-label">Aporte esperado</span>
-              <strong class="stat-value" id="stat-expected">$0</strong>
+              <strong class="stat-value" id="stat-expected" data-stat-value="expected">$0</strong>
               <span class="stat-hint">Proyectos con aporte</span>
             </button>
             <button class="stat-card" type="button" data-stat-filter="received">
               <span class="stat-label">Aporte recibido</span>
-              <strong class="stat-value" id="stat-received">$0</strong>
+              <strong class="stat-value" id="stat-received" data-stat-value="received">$0</strong>
               <span class="stat-hint">Proyectos con dinero recibido</span>
             </button>
           </section>
@@ -105,6 +105,10 @@
                 <label class="checkbox-field">
                   <input id="project-completed-filter" type="checkbox" />
                   <span>Mostrar completados</span>
+                </label>
+                <label class="checkbox-field">
+                  <input id="project-archived-filter" type="checkbox" />
+                  <span>Mostrar archivados</span>
                 </label>
                 <button class="button button-secondary" id="clear-filters-button" type="button">Limpiar filtros</button>
               </div>
