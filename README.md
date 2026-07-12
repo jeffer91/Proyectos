@@ -4,26 +4,43 @@ Aplicación de escritorio para gestionar proyectos personales, su avance, fechas
 
 ## Estado actual
 
-**Bloque 8 completado:** hitos y cálculo automático del avance.
+**Versión 0.8.1:** revisión general de funcionamiento, seguridad local y consistencia de datos.
 
-La aplicación ya permite:
+La aplicación permite:
 
 - Crear proyectos mediante un pop-up con nombre y tipo.
 - Buscar, filtrar, ordenar y paginar la tabla principal.
+- Mostrar y restaurar proyectos archivados.
+- Mostrar proyectos completados mediante filtro.
 - Abrir un proyecto pulsando cualquier parte de su fila.
 - Ver una pantalla interna con avance, próxima fecha y aportes.
 - Crear, editar, completar y eliminar hitos.
-- Guardar en cada hito un título, descripción, fecha objetivo y porcentaje.
-- Calcular el avance general como el promedio de todos los hitos.
+- Calcular el avance general como el promedio de los hitos.
 - Establecer la próxima fecha con el hito pendiente más cercano.
 - Resaltar hitos vencidos y separar los completados.
-- Editar nombre, tipo, estado, fechas y valores económicos del proyecto.
+- Editar nombre, tipo, estado, fecha de inicio y valores económicos.
 - Archivar proyectos sin borrar sus datos, hitos ni documentos.
-- Eliminar proyectos enviando su carpeta privada a la Papelera.
+- Eliminar proyectos y enviar su carpeta privada a la Papelera.
 - Importar archivos PDF, DOC y DOCX.
 - Abrir documentos, mostrar su ubicación y crear respaldos.
-- Eliminar documentos enviándolos a la Papelera del sistema.
-- Guardar toda la información estructurada en SQLite.
+- Eliminar documentos de forma coordinada con su registro en SQLite.
+- Guardar toda la información estructurada en una base local.
+
+## Correcciones de la versión 0.8.1
+
+- Los cuatro indicadores superiores muestran ahora los valores reales.
+- El filtro de estado `Completado` funciona aunque estuviera oculto por defecto.
+- Los proyectos archivados se pueden localizar y restaurar.
+- La tabla identifica visualmente los proyectos archivados.
+- El avance y la próxima fecha ya no se pueden sobrescribir manualmente; dependen de los hitos.
+- Los modales permanecen bloqueados mientras una operación está en curso.
+- Los errores de acciones asíncronas dentro de los modales quedan controlados.
+- La eliminación de documentos mantiene coordinados el archivo físico y su registro.
+- La aplicación detecta cuando un documento registrado ya no existe físicamente.
+- La API del navegador ya no permite registrar rutas arbitrarias de archivos.
+- Los importes aceptan formatos como `1.250,50` y `1,250.50` y rechazan valores inválidos.
+- Se agregaron pruebas de migraciones, proyectos, hitos, archivos y eliminación en cascada.
+- Se agregó una verificación automática mediante GitHub Actions.
 
 ## Requisitos
 
@@ -90,33 +107,23 @@ Hito 3: 0 %
 Avance general: 50 %
 ```
 
-La próxima fecha del proyecto corresponde a la fecha más cercana entre los hitos que todavía no han llegado al 100 %. El estado del proyecto continúa siendo manual.
+La próxima fecha corresponde a la fecha más cercana entre los hitos que todavía no hayan llegado al 100 %. El estado del proyecto continúa siendo manual.
 
-## Archivos principales del Bloque 8
+## Verificación automática
+
+El flujo `.github/workflows/ci.yml` ejecuta en cada cambio de la rama principal:
 
 ```text
-database/
-├── migrations/
-│   └── 002-hitos.sql
-├── repositories/
-│   └── hitos-repository.js
-└── schema.sql
-
-electron/
-├── preload.js
-└── ipc/
-    └── proyectos-ipc.js
-
-src/
-├── modules/
-│   ├── proyectos/
-│   │   └── proyectos-service.js
-│   └── proyecto/
-│       └── proyecto-page.js
-└── styles/
-    └── proyecto-detalle.css
+npm run check
+npm test
 ```
 
-## Siguiente bloque recomendado
+La prueba local recomendada antes de trabajar con datos reales es:
 
-El Bloque 9 puede incorporar historial de cambios y actividad: creación y edición de hitos, cambios de estado, documentos agregados y avances registrados.
+```powershell
+git pull
+npm install
+npm run check
+npm test
+npm start
+```
