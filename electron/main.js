@@ -11,10 +11,26 @@ const { registerProyectosIpc } = require("./ipc/proyectos-ipc");
 const { registerArchivosIpc } = require("./ipc/archivos-ipc");
 const { registerVentanaIpc } = require("./ipc/ventana-ipc");
 
+const hasSingleInstanceLock = app.requestSingleInstanceLock();
+
 let mainWindow = null;
 let isQuitting = false;
 let applicationReady = false;
 let unregisterIpcHandlers = null;
+
+function focusMainWindow() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+
+  if (mainWindow.isMinimized()) {
+    mainWindow.restore();
+  }
+
+  if (!mainWindow.isVisible()) {
+    mainWindow.show();
+  }
+
+  mainWindow.focus();
+}
 
 function registerApplicationIpc() {
   if (unregisterIpcHandlers) return;
@@ -37,6 +53,19 @@ function registerApplicationIpc() {
   };
 }
 
+function handleWindowLoadFailure(error) {
+  console.error("No se pudo cargar la interfaz principal:", error);
+
+  if (!isQuitting) {
+    dialog.showErrorBox(
+      "No se pudo abrir Proyectos",
+      `La interfaz de la aplicación no pudo cargarse.\n\n${error.message}`
+    );
+  }
+
+  app.quit();
+}
+
 function createMainWindow() {
   mainWindow = new BrowserWindow({
     width: 1366,
@@ -57,7 +86,9 @@ function createMainWindow() {
     }
   });
 
-  void mainWindow.loadFile(path.join(__dirname, "..", "src", "index.html"));
+  void mainWindow
+    .loadFile(path.join(__dirname, "..", "src", "index.html"))
+    .catch(handleWindowLoadFailure);
 
   mainWindow.once("ready-to-show", () => {
     if (mainWindow && !mainWindow.isDestroyed()) mainWindow.show();
@@ -73,6 +104,18 @@ function createMainWindow() {
     if (currentUrl && url !== currentUrl) {
       event.preventDefault();
       if (/^https?:\/\//i.test(url)) void shell.openExternal(url);
+    }
+  });
+
+  mainWindow.webContents.on("render-process-gone", (_event, details) => {
+    console.error("El proceso de la interfaz terminó inesperadamente:", details);
+
+    if (!isQuitting) {
+      dialog.showErrorBox(
+        "La interfaz dejó de funcionar",
+        "Proyectos debe cerrarse para proteger la información local. Vuelve a abrir la aplicación."
+      );
+      app.quit();
     }
   });
 
@@ -99,25 +142,36 @@ async function startApplication() {
   }
 }
 
-app.whenReady().then(() => {
-  void startApplication();
-  app.on("activate", () => {
-    if (applicationReady && BrowserWindow.getAllWindows().length === 0 && !isQuitting) {
-      createMainWindow();
-    }
+if (!hasSingleInstanceLock) {
+  app.quit();
+} else {
+  app.on("second-instance", () => {
+    focusMainWindow();
   });
-});
 
-app.on("before-quit", () => {
-  isQuitting = true;
-  applicationReady = false;
-  if (unregisterIpcHandlers) unregisterIpcHandlers();
-  closeDatabase();
-});
+  app.whenReady().then(() => {
+    void startApplication();
 
-app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") app.quit();
-});
+    app.on("activate", () => {
+      if (applicationReady && BrowserWindow.getAllWindows().length === 0 && !isQuitting) {
+        createMainWindow();
+      } else {
+        focusMainWindow();
+      }
+    });
+  });
+
+  app.on("before-quit", () => {
+    isQuitting = true;
+    applicationReady = false;
+    if (unregisterIpcHandlers) unregisterIpcHandlers();
+    closeDatabase();
+  });
+
+  app.on("window-all-closed", () => {
+    if (process.platform !== "darwin") app.quit();
+  });
+}
 
 process.on("uncaughtException", (error) => {
   console.error("Error no controlado en el proceso principal:", error);
