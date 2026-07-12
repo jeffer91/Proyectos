@@ -4,18 +4,19 @@ Aplicación de escritorio para gestionar proyectos personales, su avance, fechas
 
 ## Estado actual
 
-**Bloque 2 completado:** base local SQLite y repositorios de datos.
+**Bloque 3 completado:** comunicación segura entre la interfaz, Electron y la base local.
 
 La aplicación ya incluye:
 
-- Inicio seguro de Electron.
-- Ventana principal y puente `preload`.
-- Base SQLite local creada automáticamente al iniciar.
-- Migraciones versionadas para actualizar la estructura sin borrar información.
-- Tablas para tipos de proyecto, proyectos y archivos.
-- Repositorios para crear, consultar, actualizar y eliminar registros.
-- Almacenamiento de aportes económicos en centavos para evitar errores de decimales.
-- Cierre seguro de la base de datos al salir de la aplicación.
+- Inicio seguro de Electron con aislamiento de contexto.
+- Base SQLite local creada automáticamente.
+- Migraciones versionadas para conservar la información.
+- Repositorios para proyectos, tipos y metadatos de archivos.
+- Canales IPC separados para proyectos, archivos y ventana.
+- API limitada mediante `preload.js`, sin exponer Node.js al navegador.
+- Servicios del lado de la interfaz para consumir la base local.
+- Estado central del módulo Proyectos con filtros, ordenamiento y paginación preparados.
+- Comprobación automática de Electron, SQLite e IPC al abrir la aplicación.
 
 ## Requisitos
 
@@ -48,7 +49,7 @@ Al iniciar, Electron crea el archivo `proyectos.db` dentro de la carpeta privada
 <userData>/database/proyectos.db
 ```
 
-La ubicación real depende del sistema operativo y no se guarda dentro del repositorio de GitHub.
+La ubicación depende del sistema operativo. La base, los documentos y los datos personales no se guardan dentro del repositorio.
 
 ## Estructura actual
 
@@ -68,13 +69,23 @@ Proyectos/
 ├── electron/
 │   ├── main.js
 │   ├── preload.js
+│   ├── ipc/
+│   │   ├── proyectos-ipc.js
+│   │   ├── archivos-ipc.js
+│   │   └── ventana-ipc.js
 │   └── services/
 │       └── database-service.js
 └── src/
     ├── index.html
-    └── app.js
+    ├── app.js
+    ├── services/
+    │   └── ipc-service.js
+    └── modules/
+        └── proyectos/
+            ├── proyectos-service.js
+            └── proyectos-state.js
 ```
 
 ## Próximo bloque
 
-El Bloque 3 conectará la interfaz con los repositorios mediante canales IPC seguros.
+El Bloque 4 incorporará el diseño general, los estilos y los componentes visuales reutilizables.
