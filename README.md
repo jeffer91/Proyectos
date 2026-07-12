@@ -4,22 +4,23 @@ Aplicación de escritorio para gestionar proyectos personales, su avance, fechas
 
 ## Estado actual
 
-**Bloque 5 completado:** pantalla principal de Proyectos completamente funcional.
+**Bloque 6 completado:** almacenamiento físico de documentos, utilidades y pruebas de la primera etapa.
 
 La aplicación ya permite:
 
 - Crear proyectos mediante un pop-up con nombre y tipo.
-- Seleccionar tipos existentes o crear tipos nuevos.
-- Asignar automáticamente fecha de inicio, estado Pendiente y avance 0 %.
-- Buscar por nombre, tipo o estado.
-- Filtrar por tipo, estado, rango de fechas y aporte económico.
-- Mostrar u ocultar proyectos completados.
-- Ordenar la tabla desde todos sus encabezados.
-- Cambiar entre 10, 25, 50 o todas las filas.
-- Usar los indicadores superiores como filtros rápidos.
-- Abrir cualquier proyecto pulsando su fila.
-- Resaltar fechas vencidas y mostrar aporte recibido/esperado.
-- Trabajar con datos reales guardados en SQLite.
+- Buscar, filtrar, ordenar y paginar la tabla principal.
+- Usar indicadores superiores como filtros rápidos.
+- Guardar la información estructurada en SQLite.
+- Crear una carpeta privada para cada proyecto.
+- Importar archivos PDF, DOC y DOCX mediante canales seguros de Electron.
+- Evitar sobrescribir documentos con el mismo nombre.
+- Calcular SHA-256 de cada documento guardado.
+- Abrir documentos, mostrar su ubicación y abrir la carpeta del proyecto.
+- Crear respaldos antes de futuras modificaciones.
+- Enviar documentos eliminados a la Papelera del sistema.
+- Validar nombres, fechas, avances y extensiones permitidas.
+- Ejecutar pruebas automáticas del almacenamiento y las utilidades.
 
 ## Requisitos
 
@@ -38,48 +39,54 @@ npm install
 npm start
 ```
 
-## Verificar archivos JavaScript
+## Verificar sintaxis
 
 ```bash
 npm run check
 ```
 
-## Base de datos local
+## Ejecutar pruebas
+
+```bash
+npm test
+```
+
+## Datos locales
 
 La aplicación crea automáticamente:
 
 ```text
-<userData>/database/proyectos.db
+<userData>/
+├── database/
+│   └── proyectos.db
+└── projects/
+    └── <id-del-proyecto>/
+        ├── metadata.json
+        ├── documents/
+        ├── backups/
+        └── temp/
 ```
 
 La base, los documentos y los datos personales no se guardan dentro del repositorio.
 
-## Estructura del módulo Proyectos
+## Archivos principales del Bloque 6
 
 ```text
-src/
-├── components/
-│   ├── modal.js
-│   ├── status-badge.js
-│   ├── progress-bar.js
-│   └── pagination.js
-├── styles/
-│   ├── variables.css
-│   ├── global.css
-│   ├── layout.css
-│   ├── components.css
-│   └── proyectos.css
-└── modules/
-    └── proyectos/
-        ├── proyectos-service.js
-        ├── proyectos-state.js
-        ├── proyectos-filters.js
-        ├── proyectos-stats.js
-        ├── proyectos-table.js
-        ├── proyecto-create-modal.js
-        └── proyectos-page.js
+electron/services/
+├── project-storage-service.js
+└── file-storage-service.js
+
+src/utils/
+├── dates.js
+├── currency.js
+├── validators.js
+└── formatters.js
+
+tests/
+├── proyectos.test.js
+└── validators.test.js
 ```
 
-## Próximo bloque
+## Estado de la primera etapa
 
-El Bloque 6 preparará el almacenamiento físico de Word y PDF, las carpetas privadas por proyecto, utilidades, validaciones y pruebas finales de esta primera etapa.
+La pantalla principal y la infraestructura local están completas. La siguiente etapa puede desarrollar la pantalla interna de cada proyecto para administrar fechas, avance, aporte, documentos y acciones de edición o archivo.
