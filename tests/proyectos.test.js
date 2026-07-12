@@ -16,6 +16,11 @@ test("formatea fechas, moneda y tamaños de archivo", () => {
   assert.equal(dates.localDateString(new Date(2026, 6, 12)), "2026-07-12");
   assert.equal(dates.daysUntil("2026-07-15", new Date(2026, 6, 12)), 3);
   assert.equal(currency.parseCurrencyToCents("$1.250,50"), 125050);
+  assert.equal(currency.parseCurrencyToCents("$1,250.50"), 125050);
+  assert.equal(currency.parseCurrencyToCents("1250.5"), 125050);
+  assert.equal(currency.parseCurrencyToCents(""), 0);
+  assert.equal(currency.parseCurrencyToCents("valor inválido"), null);
+  assert.equal(currency.parseCurrencyToCents("-10"), null);
   assert.match(currency.formatCurrency(125050), /1[.,]250/);
   assert.equal(formatters.formatFileSize(1024), "1 KB");
   assert.equal(formatters.statusLabel("en_proceso"), "En proceso");
