@@ -1,40 +1,37 @@
 "use strict";
 
 (function exposeProyectosTable(global) {
-  const currencyFormatter = new Intl.NumberFormat("es-EC", {
+  const fallbackCurrencyFormatter = new Intl.NumberFormat("es-EC", {
     style: "currency",
     currency: "USD",
     minimumFractionDigits: 0,
     maximumFractionDigits: 2
   });
-
-  const dateFormatter = new Intl.DateTimeFormat("es-EC", {
+  const fallbackDateFormatter = new Intl.DateTimeFormat("es-EC", {
     day: "2-digit",
     month: "short",
     year: "numeric"
   });
 
   function formatCurrency(cents) {
+    if (global.AppCurrency?.formatCurrency) return global.AppCurrency.formatCurrency(cents);
     const value = Number(cents || 0) / 100;
-    return currencyFormatter.format(Number.isFinite(value) ? value : 0);
+    return fallbackCurrencyFormatter.format(Number.isFinite(value) ? value : 0);
   }
 
   function formatDate(value) {
-    if (!value) {
-      return "—";
-    }
-
+    if (global.AppDates?.formatDate) return global.AppDates.formatDate(value);
+    if (!value) return "—";
     const date = /^\d{4}-\d{2}-\d{2}$/.test(value)
       ? new Date(`${value}T12:00:00`)
       : new Date(value);
-
-    return Number.isNaN(date.getTime()) ? "—" : dateFormatter.format(date);
+    return Number.isNaN(date.getTime()) ? "—" : fallbackDateFormatter.format(date);
   }
 
   function isOverdue(value) {
+    if (global.AppDates?.isOverdue) return global.AppDates.isOverdue(value);
     return Boolean(
-      value &&
-      /^\d{4}-\d{2}-\d{2}$/.test(value) &&
+      value && /^\d{4}-\d{2}-\d{2}$/.test(value) &&
       value < global.ProyectosFilters.localDateString()
     );
   }
@@ -52,7 +49,6 @@
       detail.textContent = secondary;
       cell.append(detail);
     }
-
     return cell;
   }
 
@@ -60,12 +56,10 @@
     const cell = document.createElement("td");
     const span = document.createElement("span");
     span.textContent = formatDate(value);
-
     if (highlightOverdue && isOverdue(value)) {
       span.className = "text-danger";
       span.title = "Fecha vencida";
     }
-
     cell.append(span);
     return cell;
   }
@@ -73,11 +67,7 @@
   function contributionCell(project) {
     const expected = Number(project.aporteEsperadoCentavos || 0);
     const received = Number(project.aporteRecibidoCentavos || 0);
-
-    if (expected === 0 && received === 0) {
-      return textCell("—");
-    }
-
+    if (expected === 0 && received === 0) return textCell("—");
     return textCell(
       `${formatCurrency(received)} / ${formatCurrency(expected)}`,
       "Recibido / esperado"
@@ -103,15 +93,10 @@
     return [...(Array.isArray(projects) ? projects : [])].sort((left, right) => {
       const a = valueFor(left);
       const b = valueFor(right);
-
       if (a === null && b === null) return 0;
       if (a === null) return 1;
       if (b === null) return -1;
-
-      if (typeof a === "number" && typeof b === "number") {
-        return (a - b) * multiplier;
-      }
-
+      if (typeof a === "number" && typeof b === "number") return (a - b) * multiplier;
       return String(a).localeCompare(String(b), "es", {
         numeric: true,
         sensitivity: "base"
@@ -125,12 +110,9 @@
     }
 
     const sortButtons = Array.from(document.querySelectorAll("[data-sort-field]"));
-
     for (const button of sortButtons) {
       button.addEventListener("click", () => {
-        if (typeof onSort === "function") {
-          onSort(button.dataset.sortField);
-        }
+        if (typeof onSort === "function") onSort(button.dataset.sortField);
       });
     }
 
@@ -138,18 +120,14 @@
       const row = document.createElement("tr");
       const cell = document.createElement("td");
       cell.colSpan = 8;
-
       const empty = document.createElement("div");
       empty.className = "empty-state";
-
       const title = document.createElement("h3");
       title.className = "empty-state-title";
       title.textContent = message;
-
       const text = document.createElement("p");
       text.className = "empty-state-text";
       text.textContent = detail;
-
       empty.append(title, text);
       cell.append(empty);
       row.append(cell);
@@ -177,7 +155,6 @@
 
           const statusCell = document.createElement("td");
           statusCell.append(global.StatusBadge.create(project.estado));
-
           const progressCell = document.createElement("td");
           progressCell.append(global.ProgressBar.create(project.avance));
 
@@ -193,11 +170,8 @@
           );
 
           const open = () => {
-            if (typeof onOpen === "function") {
-              onOpen(project);
-            }
+            if (typeof onOpen === "function") onOpen(project);
           };
-
           row.addEventListener("click", open);
           row.addEventListener("keydown", (event) => {
             if (event.key === "Enter" || event.key === " ") {
@@ -205,7 +179,6 @@
               open();
             }
           });
-
           body.append(row);
         }
       }
