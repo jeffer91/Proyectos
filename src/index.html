@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="./styles/global.css" />
     <link rel="stylesheet" href="./styles/layout.css" />
     <link rel="stylesheet" href="./styles/components.css" />
+    <link rel="stylesheet" href="./styles/proyectos.css" />
   </head>
   <body>
     <main class="app-shell">
@@ -27,41 +28,35 @@
           </div>
 
           <div class="page-actions">
-            <button
-              class="button button-primary"
-              id="new-project-button"
-              type="button"
-              disabled
-              title="La creación de proyectos se habilitará en el siguiente bloque"
-            >
+            <button class="button button-primary" id="new-project-button" type="button">
               Nuevo proyecto
             </button>
           </div>
         </header>
 
         <section class="stats-grid" aria-label="Resumen de proyectos">
-          <button class="stat-card" type="button" disabled>
+          <button class="stat-card" data-stat-filter="total" type="button" aria-pressed="true">
             <span class="stat-label">Total de proyectos</span>
-            <strong class="stat-value" id="stat-total">0</strong>
-            <span class="stat-hint">Todos los proyectos guardados</span>
+            <strong class="stat-value" data-stat-value="total">0</strong>
+            <span class="stat-hint">Pulsa para mostrar todos</span>
           </button>
 
-          <button class="stat-card" type="button" disabled>
+          <button class="stat-card" data-stat-filter="dueSoon" type="button" aria-pressed="false">
             <span class="stat-label">Próximos a vencer</span>
-            <strong class="stat-value" id="stat-due-soon">0</strong>
+            <strong class="stat-value" data-stat-value="dueSoon">0</strong>
             <span class="stat-hint">Dentro de los próximos 7 días</span>
           </button>
 
-          <button class="stat-card" type="button" disabled>
+          <button class="stat-card" data-stat-filter="expected" type="button" aria-pressed="false">
             <span class="stat-label">Aporte esperado</span>
-            <strong class="stat-value" id="stat-expected">$0</strong>
-            <span class="stat-hint">Valor total esperado</span>
+            <strong class="stat-value" data-stat-value="expected">$0</strong>
+            <span class="stat-hint">Proyectos con aporte económico</span>
           </button>
 
-          <button class="stat-card" type="button" disabled>
+          <button class="stat-card" data-stat-filter="received" type="button" aria-pressed="false">
             <span class="stat-label">Aporte recibido</span>
-            <strong class="stat-value" id="stat-received">$0</strong>
-            <span class="stat-hint">Valor total recibido</span>
+            <strong class="stat-value" data-stat-value="received">$0</strong>
+            <span class="stat-hint">Proyectos que ya generaron dinero</span>
           </button>
         </section>
 
@@ -77,32 +72,61 @@
                 <span class="field-label">Buscar</span>
                 <input
                   class="input"
+                  id="project-search"
                   type="search"
                   placeholder="Nombre, tipo o estado"
-                  disabled
+                  autocomplete="off"
                 />
               </label>
 
               <label class="field">
                 <span class="field-label">Tipo</span>
-                <select class="select" disabled>
-                  <option>Todos los tipos</option>
+                <select class="select" id="project-type-filter">
+                  <option value="">Todos los tipos</option>
                 </select>
               </label>
 
               <label class="field">
                 <span class="field-label">Estado</span>
-                <select class="select" disabled>
-                  <option>Estados activos</option>
+                <select class="select" id="project-status-filter">
+                  <option value="">Todos los estados</option>
+                  <option value="pendiente">Pendiente</option>
+                  <option value="en_proceso">En proceso</option>
+                  <option value="pausado">Pausado</option>
+                  <option value="completado">Completado</option>
                 </select>
               </label>
 
               <label class="field">
+                <span class="field-label">Desde</span>
+                <input class="input" id="project-date-from" type="date" />
+              </label>
+
+              <label class="field">
+                <span class="field-label">Hasta</span>
+                <input class="input" id="project-date-to" type="date" />
+              </label>
+
+              <label class="field">
                 <span class="field-label">Aporte</span>
-                <select class="select" disabled>
-                  <option>Todos</option>
+                <select class="select" id="project-economic-filter">
+                  <option value="todos">Todos</option>
+                  <option value="con_aporte">Con aporte</option>
+                  <option value="sin_aporte">Sin aporte</option>
+                  <option value="recibido">Con dinero recibido</option>
                 </select>
               </label>
+            </div>
+
+            <div class="toolbar-extra">
+              <label class="checkbox-field">
+                <input id="project-completed-filter" type="checkbox" />
+                Mostrar proyectos completados
+              </label>
+
+              <button class="button button-secondary" id="clear-filters-button" type="button">
+                Limpiar filtros
+              </button>
             </div>
           </div>
 
@@ -110,14 +134,14 @@
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>Nombre</th>
-                  <th>Tipo</th>
-                  <th>Estado</th>
-                  <th>Fecha de inicio</th>
-                  <th>Próxima fecha</th>
-                  <th>Última actualización</th>
-                  <th>Aporte</th>
-                  <th>Avance</th>
+                  <th><button class="sort-button" data-sort-field="nombre" type="button">Nombre</button></th>
+                  <th><button class="sort-button" data-sort-field="tipoNombre" type="button">Tipo</button></th>
+                  <th><button class="sort-button" data-sort-field="estado" type="button">Estado</button></th>
+                  <th><button class="sort-button" data-sort-field="fechaInicio" type="button">Fecha de inicio</button></th>
+                  <th><button class="sort-button" data-sort-field="proximaFecha" type="button">Próxima fecha</button></th>
+                  <th><button class="sort-button" data-sort-field="ultimaActualizacion" type="button">Última actualización</button></th>
+                  <th><button class="sort-button" data-sort-field="aporte" type="button">Aporte</button></th>
+                  <th><button class="sort-button" data-sort-field="avance" type="button">Avance</button></th>
                 </tr>
               </thead>
               <tbody id="projects-table-body"></tbody>
@@ -125,8 +149,8 @@
           </div>
 
           <footer class="table-footer">
-            <span id="table-result-label">Mostrando la vista inicial</span>
-            <span>Filtros, ordenamiento y paginación se activarán en el Bloque 5.</span>
+            <span id="table-result-label">Cargando proyectos...</span>
+            <div id="pagination-container"></div>
           </footer>
         </section>
 
@@ -142,9 +166,15 @@
     <script src="./components/modal.js" defer></script>
     <script src="./components/status-badge.js" defer></script>
     <script src="./components/progress-bar.js" defer></script>
+    <script src="./components/pagination.js" defer></script>
     <script src="./services/ipc-service.js" defer></script>
     <script src="./modules/proyectos/proyectos-service.js" defer></script>
     <script src="./modules/proyectos/proyectos-state.js" defer></script>
+    <script src="./modules/proyectos/proyectos-filters.js" defer></script>
+    <script src="./modules/proyectos/proyectos-stats.js" defer></script>
+    <script src="./modules/proyectos/proyectos-table.js" defer></script>
+    <script src="./modules/proyectos/proyecto-create-modal.js" defer></script>
+    <script src="./modules/proyectos/proyectos-page.js" defer></script>
     <script src="./app.js" defer></script>
   </body>
 </html>
