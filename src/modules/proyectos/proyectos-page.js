@@ -3,9 +3,7 @@
 (function exposeProyectosPage(global) {
   function text(id, value) {
     const element = document.getElementById(id);
-    if (element) {
-      element.textContent = String(value);
-    }
+    if (element) element.textContent = String(value);
   }
 
   function requiredModulesAvailable() {
@@ -17,60 +15,35 @@
       "ProyectosStats",
       "ProyectosTable",
       "ProyectoCreateModal",
+      "ProyectoPage",
+      "ProyectoEditModal",
+      "ProyectoDocuments",
       "Pagination",
       "StatusBadge",
       "ProgressBar",
-      "Modal"
+      "Modal",
+      "AppDates",
+      "AppCurrency",
+      "AppValidators",
+      "AppFormatters"
     ].every((name) => Boolean(global[name]));
   }
 
-  function createProjectPreview(project) {
-    const content = document.createElement("div");
-    content.className = "project-preview";
-
-    const note = document.createElement("p");
-    note.className = "text-muted";
-    note.textContent =
-      "La pantalla interna de este proyecto se construirá en la siguiente etapa. La fila ya queda preparada para abrirla.";
-
-    const details = document.createElement("dl");
-    details.className = "project-preview-grid";
-
-    const values = [
-      ["Tipo", project.tipoNombre || "—"],
-      ["Estado", String(project.estado || "").replaceAll("_", " ")],
-      ["Fecha de inicio", global.ProyectosTable.formatDate(project.fechaInicio)],
-      ["Próxima fecha", global.ProyectosTable.formatDate(project.proximaFecha)],
-      ["Aporte esperado", global.ProyectosTable.formatCurrency(project.aporteEsperadoCentavos)],
-      ["Aporte recibido", global.ProyectosTable.formatCurrency(project.aporteRecibidoCentavos)]
-    ];
-
-    for (const [label, value] of values) {
-      const wrapper = document.createElement("div");
-      const term = document.createElement("dt");
-      const definition = document.createElement("dd");
-      term.textContent = label;
-      definition.textContent = value;
-      wrapper.append(term, definition);
-      details.append(wrapper);
-    }
-
-    const progressTitle = document.createElement("span");
-    progressTitle.className = "field-label";
-    progressTitle.textContent = "Avance";
-
-    const progress = global.ProgressBar.create(project.avance);
-    content.append(note, details, progressTitle, progress);
-    return content;
-  }
-
   async function initialize() {
+    const listView = document.getElementById("projects-list-view");
+    const detailView = document.getElementById("project-detail-view");
     const statusElement = document.getElementById("technical-status");
     const newProjectButton = document.getElementById("new-project-button");
     const tableBody = document.getElementById("projects-table-body");
     const paginationContainer = document.getElementById("pagination-container");
 
-    if (!requiredModulesAvailable()) {
+    if (
+      !listView ||
+      !detailView ||
+      !tableBody ||
+      !paginationContainer ||
+      !requiredModulesAvailable()
+    ) {
       if (statusElement) {
         statusElement.textContent = "No se cargaron todos los módulos de la pantalla";
         statusElement.classList.add("is-error");
@@ -90,23 +63,39 @@
       }
     });
 
+    let refreshData = async () => {};
+
+    const detailPage = global.ProyectoPage.create({
+      root: detailView,
+      async onBack() {
+        detailPage.close();
+        listView.hidden = false;
+        global.ProyectosState.selectProject(null);
+        await refreshData();
+      },
+      async onProjectChanged() {
+        await refreshData();
+      }
+    });
+
     const table = global.ProyectosTable.create({
       body: tableBody,
       onSort(field) {
         global.ProyectosState.toggleSort(field);
       },
-      onOpen(project) {
-        global.ProyectosState.selectProject(project.id);
-        let previewModal = null;
-        previewModal = global.Modal.create({
-          title: project.nombre,
-          content: createProjectPreview(project),
-          actions: [{ label: "Cerrar", className: "button button-secondary" }],
-          onClose() {
-            window.setTimeout(() => previewModal?.destroy(), 0);
-          }
-        });
-        previewModal.open();
+      async onOpen(project) {
+        try {
+          global.ProyectosState.selectProject(project.id);
+          listView.hidden = true;
+          detailView.hidden = false;
+          const snapshot = global.ProyectosState.getSnapshot();
+          await detailPage.open(project.id, snapshot.types);
+        } catch (error) {
+          console.error("No fue posible abrir el proyecto:", error);
+          detailPage.close();
+          listView.hidden = false;
+          setTechnicalStatus(error.message, true);
+        }
       }
     });
 
@@ -121,10 +110,7 @@
     });
 
     function setTechnicalStatus(message, isError = false) {
-      if (!statusElement) {
-        return;
-      }
-
+      if (!statusElement) return;
       statusElement.textContent = message;
       statusElement.classList.toggle("is-error", isError);
     }
@@ -177,14 +163,12 @@
           : `Mostrando ${firstVisible}–${lastVisible} de ${sorted.length}`
       );
 
-      if (newProjectButton) {
-        newProjectButton.disabled = snapshot.loading;
-      }
+      if (newProjectButton) newProjectButton.disabled = snapshot.loading;
     }
 
     global.ProyectosState.subscribe(render);
 
-    async function refreshData() {
+    refreshData = async function refreshProjectsData() {
       global.ProyectosState.setLoading(true);
       global.ProyectosState.setError(null);
       setTechnicalStatus("Actualizando proyectos...");
@@ -213,7 +197,7 @@
       } finally {
         global.ProyectosState.setLoading(false);
       }
-    }
+    };
 
     newProjectButton?.addEventListener("click", () => {
       const snapshot = global.ProyectosState.getSnapshot();
@@ -225,6 +209,8 @@
       });
     });
 
+    listView.hidden = false;
+    detailView.hidden = true;
     await refreshData();
   }
 
