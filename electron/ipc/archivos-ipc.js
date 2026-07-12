@@ -20,7 +20,6 @@ const {
 const CHANNELS = Object.freeze({
   LIST_FILES: "archivos:listar-por-proyecto",
   GET_FILE: "archivos:obtener",
-  REGISTER_FILE: "archivos:registrar",
   IMPORT_FILES: "archivos:importar",
   OPEN_FILE: "archivos:abrir",
   REVEAL_FILE: "archivos:mostrar-en-carpeta",
@@ -53,7 +52,9 @@ function registerHandler(channel, callback) {
 }
 
 function requireTextId(value, label) {
-  if (typeof value !== "string" || !value.trim()) throw new Error(`${label} es obligatorio.`);
+  if (typeof value !== "string" || !value.trim()) {
+    throw new Error(`${label} es obligatorio.`);
+  }
   return value.trim();
 }
 
@@ -97,6 +98,33 @@ function normalizeFileMetadata(payload = {}) {
 
 function updateDocumentCount(projectId) {
   setDocumentCount(projectId, archivosRepository.listByProject(projectId).length);
+}
+
+function getExistingStoredPath(file) {
+  const absolutePath = resolveStoredDocument({
+    projectId: file.proyectoId,
+    relativePath: file.rutaRelativa
+  });
+
+  let stats;
+  try {
+    stats = fs.statSync(absolutePath);
+  } catch (error) {
+    if (error?.code === "ENOENT") {
+      const missingError = new Error("El documento ya no existe en la carpeta del proyecto.");
+      missingError.code = "STORED_FILE_MISSING";
+      throw missingError;
+    }
+    throw error;
+  }
+
+  if (!stats.isFile()) {
+    const error = new Error("La ruta guardada no corresponde a un documento.");
+    error.code = "STORED_PATH_NOT_FILE";
+    throw error;
+  }
+
+  return absolutePath;
 }
 
 async function importSelectedDocuments(event, projectId) {
@@ -151,22 +179,76 @@ async function importSelectedDocuments(event, projectId) {
   return { canceled: false, files, errors };
 }
 
+async function deleteStoredFile(fileId) {
+  const file = getStoredFile(fileId);
+  const absolutePath = resolveStoredDocument({
+    projectId: file.proyectoId,
+    relativePath: file.rutaRelativa
+  });
+  const stagedPath = `${absolutePath}.deleting-${Date.now()}`;
+  let staged = false;
+
+  if (fs.existsSync(absolutePath)) {
+    fs.renameSync(absolutePath, stagedPath);
+    staged = true;
+  }
+
+  try {
+    const removed = archivosRepository.remove(file.id);
+    if (!removed) {
+      if (staged && fs.existsSync(stagedPath)) {
+        fs.renameSync(stagedPath, absolutePath);
+      }
+      return { removed: false, trashed: false };
+    }
+  } catch (error) {
+    if (staged && fs.existsSync(stagedPath)) {
+      try {
+        fs.renameSync(stagedPath, absolutePath);
+      } catch (restoreError) {
+        console.error("No se pudo restaurar el documento tras el error:", restoreError);
+      }
+    }
+    throw error;
+  }
+
+  if (staged && fs.existsSync(stagedPath)) {
+    try {
+      await shell.trashItem(stagedPath);
+    } catch (trashError) {
+      try {
+        fs.renameSync(stagedPath, absolutePath);
+        archivosRepository.restore(file);
+        updateDocumentCount(file.proyectoId);
+      } catch (restoreError) {
+        console.error("No se pudo restaurar el documento ni su metadata:", restoreError);
+      }
+
+      const error = new Error(
+        "No se pudo enviar el documento a la Papelera. El archivo se conservó."
+      );
+      error.code = "FILE_TRASH_FAILED";
+      error.cause = trashError;
+      throw error;
+    }
+  }
+
+  updateDocumentCount(file.proyectoId);
+  return { removed: true, trashed: staged };
+}
+
 function registerArchivosIpc() {
-  registerHandler(CHANNELS.LIST_FILES, (_event, projectId) =>
-    archivosRepository.listByProject(requireTextId(projectId, "El identificador del proyecto"))
-  );
+  registerHandler(CHANNELS.LIST_FILES, (_event, projectId) => {
+    const project = getProject(projectId);
+    return archivosRepository.listByProject(project.id);
+  });
+
   registerHandler(CHANNELS.GET_FILE, (_event, fileId) => getStoredFile(fileId));
-  registerHandler(CHANNELS.REGISTER_FILE, (_event, payload) =>
-    archivosRepository.create(normalizeFileMetadata(payload))
-  );
   registerHandler(CHANNELS.IMPORT_FILES, importSelectedDocuments);
 
   registerHandler(CHANNELS.OPEN_FILE, async (_event, fileId) => {
     const file = getStoredFile(fileId);
-    const absolutePath = resolveStoredDocument({
-      projectId: file.proyectoId,
-      relativePath: file.rutaRelativa
-    });
+    const absolutePath = getExistingStoredPath(file);
     const openError = await shell.openPath(absolutePath);
     if (openError) throw new Error(openError);
     return true;
@@ -174,10 +256,7 @@ function registerArchivosIpc() {
 
   registerHandler(CHANNELS.REVEAL_FILE, (_event, fileId) => {
     const file = getStoredFile(fileId);
-    shell.showItemInFolder(resolveStoredDocument({
-      projectId: file.proyectoId,
-      relativePath: file.rutaRelativa
-    }));
+    shell.showItemInFolder(getExistingStoredPath(file));
     return true;
   });
 
@@ -191,23 +270,14 @@ function registerArchivosIpc() {
 
   registerHandler(CHANNELS.BACKUP_FILE, async (_event, fileId) => {
     const file = getStoredFile(fileId);
+    getExistingStoredPath(file);
     return backupDocument({
       projectId: file.proyectoId,
       relativePath: file.rutaRelativa
     });
   });
 
-  registerHandler(CHANNELS.DELETE_FILE, async (_event, fileId) => {
-    const file = getStoredFile(fileId);
-    const absolutePath = resolveStoredDocument({
-      projectId: file.proyectoId,
-      relativePath: file.rutaRelativa
-    });
-    if (fs.existsSync(absolutePath)) await shell.trashItem(absolutePath);
-    const removed = archivosRepository.remove(file.id);
-    updateDocumentCount(file.proyectoId);
-    return removed;
-  });
+  registerHandler(CHANNELS.DELETE_FILE, (_event, fileId) => deleteStoredFile(fileId));
 
   return function unregisterArchivosIpc() {
     for (const channel of Object.values(CHANNELS)) ipcMain.removeHandler(channel);
