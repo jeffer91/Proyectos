@@ -1,0 +1,29 @@
+name: Verificación del proyecto
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v4
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.13.1"
+
+      - name: Revisar sintaxis
+        run: npm run check
+
+      - name: Ejecutar pruebas
+        run: npm test
