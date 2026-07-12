@@ -38,6 +38,21 @@ CREATE TABLE IF NOT EXISTS proyectos (
     ON DELETE RESTRICT
 ) STRICT;
 
+CREATE TABLE IF NOT EXISTS hitos (
+  id TEXT PRIMARY KEY,
+  proyecto_id TEXT NOT NULL,
+  titulo TEXT NOT NULL,
+  descripcion TEXT,
+  fecha_objetivo TEXT NOT NULL,
+  avance INTEGER NOT NULL DEFAULT 0
+    CHECK (avance BETWEEN 0 AND 100),
+  creado_en TEXT NOT NULL,
+  actualizado_en TEXT NOT NULL,
+  FOREIGN KEY (proyecto_id) REFERENCES proyectos(id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE
+) STRICT;
+
 CREATE TABLE IF NOT EXISTS archivos (
   id TEXT PRIMARY KEY,
   proyecto_id TEXT NOT NULL,
@@ -68,6 +83,15 @@ CREATE INDEX IF NOT EXISTS idx_proyectos_proxima_fecha
 
 CREATE INDEX IF NOT EXISTS idx_proyectos_ultima_actualizacion
   ON proyectos(ultima_actualizacion DESC);
+
+CREATE INDEX IF NOT EXISTS idx_hitos_proyecto
+  ON hitos(proyecto_id);
+
+CREATE INDEX IF NOT EXISTS idx_hitos_fecha_objetivo
+  ON hitos(fecha_objetivo);
+
+CREATE INDEX IF NOT EXISTS idx_hitos_proyecto_avance
+  ON hitos(proyecto_id, avance);
 
 CREATE INDEX IF NOT EXISTS idx_archivos_proyecto
   ON archivos(proyecto_id);
