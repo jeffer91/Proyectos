@@ -1,0 +1,39 @@
+# Dependencias
+node_modules/
+
+# Archivos de compilación y distribución
+dist/
+release/
+out/
+
+# Datos locales de la aplicación
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+userdata/
+data/
+
+# Variables y secretos
+.env
+.env.*
+!.env.example
+
+# Registros
+*.log
+logs/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editores
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Cobertura y pruebas
+coverage/
+.nyc_output/
