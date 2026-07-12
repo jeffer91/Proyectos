@@ -108,15 +108,16 @@ function createMainWindow() {
   });
 
   mainWindow.webContents.on("render-process-gone", (_event, details) => {
-    console.error("El proceso de la interfaz terminó inesperadamente:", details);
-
-    if (!isQuitting) {
-      dialog.showErrorBox(
-        "La interfaz dejó de funcionar",
-        "Proyectos debe cerrarse para proteger la información local. Vuelve a abrir la aplicación."
-      );
-      app.quit();
+    if (isQuitting || details?.reason === "clean-exit") {
+      return;
     }
+
+    console.error("El proceso de la interfaz terminó inesperadamente:", details);
+    dialog.showErrorBox(
+      "La interfaz dejó de funcionar",
+      "Proyectos debe cerrarse para proteger la información local. Vuelve a abrir la aplicación."
+    );
+    app.quit();
   });
 
   mainWindow.on("closed", () => {
