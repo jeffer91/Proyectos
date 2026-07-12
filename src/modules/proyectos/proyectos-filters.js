@@ -4,6 +4,10 @@
   const DAY_MS = 24 * 60 * 60 * 1000;
 
   function normalizeSearch(value) {
+    if (global.AppFormatters?.normalizeSearchText) {
+      return global.AppFormatters.normalizeSearchText(value);
+    }
+
     return String(value || "")
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
@@ -12,6 +16,10 @@
   }
 
   function localDateString(date = new Date()) {
+    if (global.AppDates?.localDateString) {
+      return global.AppDates.localDateString(date);
+    }
+
     return [
       date.getFullYear(),
       String(date.getMonth() + 1).padStart(2, "0"),
@@ -21,8 +29,13 @@
 
   function isDueSoon(project) {
     const value = project?.proximaFecha;
-    if (!value || project.estado === "completado") {
+    if (!value || project.estado === "completado" || project.archivado === true) {
       return false;
+    }
+
+    if (global.AppDates?.daysUntil) {
+      const days = global.AppDates.daysUntil(value);
+      return Number.isInteger(days) && days >= 0 && days <= 7;
     }
 
     const today = new Date();
@@ -41,10 +54,19 @@
     const dateTo = String(filters.dateTo || "");
     const economic = String(filters.economic || "todos");
     const includeCompleted = filters.includeCompleted === true;
+    const includeArchived = filters.includeArchived === true;
     const quickFilter = String(filters.quickFilter || "total");
 
     return (Array.isArray(projects) ? projects : []).filter((project) => {
-      if (!includeCompleted && project.estado === "completado") {
+      if (!includeArchived && project.archivado === true) {
+        return false;
+      }
+
+      if (
+        !includeCompleted &&
+        project.estado === "completado" &&
+        status !== "completado"
+      ) {
         return false;
       }
 
@@ -52,7 +74,8 @@
         const haystack = normalizeSearch([
           project.nombre,
           project.tipoNombre,
-          String(project.estado || "").replaceAll("_", " ")
+          String(project.estado || "").replaceAll("_", " "),
+          project.archivado ? "archivado" : ""
         ].join(" "));
 
         if (!haystack.includes(search)) {
@@ -109,6 +132,7 @@
       dateTo: document.getElementById("project-date-to"),
       economic: document.getElementById("project-economic-filter"),
       completed: document.getElementById("project-completed-filter"),
+      archived: document.getElementById("project-archived-filter"),
       clear: document.getElementById("clear-filters-button")
     };
 
@@ -130,6 +154,7 @@
         dateTo: elements.dateTo.value,
         economic: elements.economic.value,
         includeCompleted: elements.completed.checked,
+        includeArchived: elements.archived.checked,
         quickFilter
       };
     }
@@ -155,12 +180,19 @@
       elements.dateFrom,
       elements.dateTo,
       elements.economic,
-      elements.completed
+      elements.completed,
+      elements.archived
     ]) {
-      element.addEventListener("change", () => emit());
+      element.addEventListener("change", () => {
+        if (element === elements.status && elements.status.value === "completado") {
+          elements.completed.checked = true;
+        }
+        emit();
+      });
     }
 
     function reset({ emitChange = true } = {}) {
+      window.clearTimeout(searchTimer);
       elements.search.value = "";
       elements.type.value = "";
       elements.status.value = "";
@@ -168,6 +200,7 @@
       elements.dateTo.value = "";
       elements.economic.value = "todos";
       elements.completed.checked = false;
+      elements.archived.checked = false;
       quickFilter = "total";
 
       if (emitChange) {
