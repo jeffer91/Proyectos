@@ -308,8 +308,13 @@ function getSummary() {
     .prepare(`
       SELECT
         COUNT(*) AS total,
-        SUM(CASE WHEN estado <> 'completado' AND archivado = 0 THEN 1 ELSE 0 END) AS activos,
-        SUM(
+        COALESCE(SUM(
+          CASE
+            WHEN estado <> 'completado' AND archivado = 0 THEN 1
+            ELSE 0
+          END
+        ), 0) AS activos,
+        COALESCE(SUM(
           CASE
             WHEN estado <> 'completado'
               AND archivado = 0
@@ -318,20 +323,23 @@ function getSummary() {
                 AND date('now', 'localtime', '+7 days')
             THEN 1 ELSE 0
           END
-        ) AS proximos_a_vencer,
-        COALESCE(SUM(aporte_esperado_centavos), 0) AS aporte_esperado_centavos,
-        COALESCE(SUM(aporte_recibido_centavos), 0) AS aporte_recibido_centavos
+        ), 0) AS proximos_a_vencer,
+        COALESCE(SUM(
+          CASE WHEN archivado = 0 THEN aporte_esperado_centavos ELSE 0 END
+        ), 0) AS aporte_esperado_centavos,
+        COALESCE(SUM(
+          CASE WHEN archivado = 0 THEN aporte_recibido_centavos ELSE 0 END
+        ), 0) AS aporte_recibido_centavos
       FROM proyectos
-      WHERE archivado = 0
     `)
     .get();
 
   return {
-    total: row.total,
-    activos: row.activos,
-    proximosAVencer: row.proximos_a_vencer,
-    aporteEsperadoCentavos: row.aporte_esperado_centavos,
-    aporteRecibidoCentavos: row.aporte_recibido_centavos
+    total: Number(row.total || 0),
+    activos: Number(row.activos || 0),
+    proximosAVencer: Number(row.proximos_a_vencer || 0),
+    aporteEsperadoCentavos: Number(row.aporte_esperado_centavos || 0),
+    aporteRecibidoCentavos: Number(row.aporte_recibido_centavos || 0)
   };
 }
 
