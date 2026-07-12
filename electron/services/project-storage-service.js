@@ -51,8 +51,18 @@ function writeJsonAtomic(filePath, value) {
   const temporaryPath = `${filePath}.${process.pid}.${Date.now()}.tmp`;
   const serialized = `${JSON.stringify(value, null, 2)}\n`;
 
-  fs.writeFileSync(temporaryPath, serialized, "utf8");
-  fs.renameSync(temporaryPath, filePath);
+  try {
+    fs.writeFileSync(temporaryPath, serialized, "utf8");
+    fs.renameSync(temporaryPath, filePath);
+  } finally {
+    if (fs.existsSync(temporaryPath)) {
+      try {
+        fs.rmSync(temporaryPath, { force: true });
+      } catch (cleanupError) {
+        console.error("No se pudo retirar un archivo temporal de metadata:", cleanupError);
+      }
+    }
+  }
 }
 
 function readJson(filePath) {
@@ -105,6 +115,36 @@ function getProjectPaths(projectId) {
   });
 }
 
+function corruptMetadataBackupPath(paths) {
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+  return path.join(paths.backups, `metadata-corrupt-${timestamp}.json`);
+}
+
+function readMetadataWithRecovery(paths) {
+  try {
+    return readJson(paths.metadata);
+  } catch (error) {
+    if (error?.code !== "INVALID_PROJECT_METADATA" || !fs.existsSync(paths.metadata)) {
+      throw error;
+    }
+
+    const backupPath = corruptMetadataBackupPath(paths);
+
+    try {
+      fs.renameSync(paths.metadata, backupPath);
+      console.warn(`Se respaldó una metadata dañada en ${backupPath}.`);
+      return null;
+    } catch (backupError) {
+      const wrapped = new Error(
+        `La metadata del proyecto está dañada y no pudo respaldarse: ${backupError.message}`
+      );
+      wrapped.code = "PROJECT_METADATA_RECOVERY_FAILED";
+      wrapped.cause = error;
+      throw wrapped;
+    }
+  }
+}
+
 function ensureProjectStructure({ projectId, projectName } = {}) {
   const normalizedId = normalizeProjectId(projectId);
   const normalizedName = normalizeProjectName(projectName);
@@ -116,7 +156,7 @@ function ensureProjectStructure({ projectId, projectName } = {}) {
   ensureDirectory(paths.temp);
 
   const now = new Date().toISOString();
-  const current = readJson(paths.metadata);
+  const current = readMetadataWithRecovery(paths);
   const metadata = {
     schemaVersion: 1,
     projectId: normalizedId,
@@ -139,7 +179,7 @@ function readProjectMetadata(projectId) {
 
 function updateProjectMetadata(projectId, changes = {}) {
   const paths = getProjectPaths(projectId);
-  const current = readJson(paths.metadata);
+  const current = readMetadataWithRecovery(paths);
 
   if (!current) {
     throw new Error("El proyecto todavía no tiene metadata local.");
