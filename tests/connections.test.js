@@ -103,10 +103,10 @@ test("la interfaz carga utilidades, servicios, módulos y aplicación en orden",
 
 test("Electron prepara base, almacenamiento e IPC antes de crear la ventana", () => {
   const main = read("electron/main.js");
-  const databaseIndex = main.indexOf("initializeDatabase({ userDataPath })");
-  const storageIndex = main.indexOf("initializeProjectStorage({ userDataPath })");
-  const ipcIndex = main.indexOf("registerApplicationIpc()");
-  const windowIndex = main.indexOf("createMainWindow()", ipcIndex);
+  const databaseIndex = main.indexOf("initializeDatabase({ userDataPath });");
+  const storageIndex = main.indexOf("initializeProjectStorage({ userDataPath });", databaseIndex);
+  const ipcIndex = main.indexOf("registerApplicationIpc();", storageIndex);
+  const windowIndex = main.indexOf("createMainWindow();", ipcIndex);
 
   assert.ok(databaseIndex >= 0, "Falta inicializar la base local");
   assert.ok(storageIndex > databaseIndex, "El almacenamiento debe iniciar después de la base");
