@@ -44,8 +44,20 @@
         changes && typeof changes === "object" ? changes : {}
       );
     },
-    eliminar(projectId) {
-      return requireIpcService().call("proyectos", "eliminar", projectId);
+    async eliminar(projectId) {
+      const result = await requireIpcService().call("proyectos", "eliminar", projectId);
+
+      if (!result?.removed) {
+        const error = new Error("No se pudo eliminar el proyecto porque ya no existe.");
+        error.code = "PROJECT_NOT_REMOVED";
+        throw error;
+      }
+
+      if (result.storageWarning) {
+        console.warn(result.storageWarning);
+      }
+
+      return result;
     },
     obtenerResumen() {
       return requireIpcService().call("proyectos", "obtenerResumen");
