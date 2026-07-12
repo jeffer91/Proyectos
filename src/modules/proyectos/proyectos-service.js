@@ -100,9 +100,6 @@
     respaldarArchivo(fileId) {
       return requireIpcService().call("archivos", "respaldar", fileId);
     },
-    registrarArchivo(metadata) {
-      return requireIpcService().call("archivos", "registrar", metadata);
-    },
     eliminarArchivo(fileId) {
       return requireIpcService().call("archivos", "eliminar", fileId);
     }
