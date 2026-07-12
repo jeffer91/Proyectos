@@ -111,12 +111,44 @@ function configureDatabase(db) {
   `);
 }
 
+function firstColumnValue(row) {
+  if (!row || typeof row !== "object") return null;
+  return Object.values(row)[0];
+}
+
+function verifyDatabaseIntegrity(db) {
+  const quickCheckRows = db.prepare("PRAGMA quick_check").all();
+  const quickCheckErrors = quickCheckRows
+    .map(firstColumnValue)
+    .filter((value) => String(value).toLowerCase() !== "ok");
+
+  if (quickCheckErrors.length > 0) {
+    const error = new Error(
+      `La base local no superó la comprobación de integridad: ${quickCheckErrors.join("; ")}`
+    );
+    error.code = "DATABASE_INTEGRITY_FAILED";
+    throw error;
+  }
+
+  const foreignKeyErrors = db.prepare("PRAGMA foreign_key_check").all();
+  if (foreignKeyErrors.length > 0) {
+    const error = new Error(
+      `La base local contiene ${foreignKeyErrors.length} relación${foreignKeyErrors.length === 1 ? "" : "es"} inválida${foreignKeyErrors.length === 1 ? "" : "s"}.`
+    );
+    error.code = "DATABASE_FOREIGN_KEY_FAILED";
+    error.details = foreignKeyErrors;
+    throw error;
+  }
+
+  return true;
+}
+
 function initializeDatabase({ userDataPath } = {}) {
   if (database) {
     return database;
   }
 
-  if (!userDataPath || typeof userDataPath !== "string") {
+  if (!userDataPath || typeof userDataPath !== "string" || !userDataPath.trim()) {
     throw new TypeError("initializeDatabase requiere una ruta userDataPath válida.");
   }
 
@@ -131,6 +163,7 @@ function initializeDatabase({ userDataPath } = {}) {
   try {
     configureDatabase(db);
     runMigrations(db);
+    verifyDatabaseIntegrity(db);
     database = db;
     return database;
   } catch (error) {
@@ -180,6 +213,15 @@ function runInTransaction(callback) {
 
   try {
     const result = callback(db);
+
+    if (result && typeof result.then === "function") {
+      const error = new Error(
+        "Las transacciones de la base local deben ejecutarse con una función sincrónica."
+      );
+      error.code = "ASYNC_TRANSACTION_NOT_SUPPORTED";
+      throw error;
+    }
+
     db.exec("COMMIT;");
     return result;
   } catch (error) {
@@ -198,5 +240,6 @@ module.exports = {
   getDatabase,
   getDatabasePath,
   closeDatabase,
-  runInTransaction
+  runInTransaction,
+  verifyDatabaseIntegrity
 };
