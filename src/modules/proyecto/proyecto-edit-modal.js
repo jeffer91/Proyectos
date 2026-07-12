@@ -8,13 +8,21 @@
     ["completado", "Completado"]
   ]);
 
-  function createField(labelText, control) {
+  function createField(labelText, control, helpText = "") {
     const label = document.createElement("label");
     label.className = "field";
     const labelSpan = document.createElement("span");
     labelSpan.className = "field-label";
     labelSpan.textContent = labelText;
     label.append(labelSpan, control);
+
+    if (helpText) {
+      const help = document.createElement("span");
+      help.className = "field-help";
+      help.textContent = helpText;
+      label.append(help);
+    }
+
     return label;
   }
 
@@ -67,12 +75,16 @@
 
     const statusSelect = createSelect(STATES, project.estado);
     const startDateInput = createInput("date", project.fechaInicio);
+    startDateInput.required = true;
+
     const nextDateInput = createInput("date", project.proximaFecha || "");
+    nextDateInput.disabled = true;
 
     const progressInput = createInput("number", String(project.avance ?? 0));
     progressInput.min = "0";
     progressInput.max = "100";
     progressInput.step = "1";
+    progressInput.disabled = true;
 
     const expectedInput = createInput(
       "number",
@@ -93,6 +105,11 @@
     error.hidden = true;
     error.setAttribute("role", "alert");
 
+    const automaticNote = document.createElement("p");
+    automaticNote.className = "form-note";
+    automaticNote.textContent =
+      "La próxima fecha y el avance se calculan automáticamente con los hitos del proyecto.";
+
     const grid = document.createElement("div");
     grid.className = "project-edit-grid";
     grid.append(
@@ -100,12 +117,12 @@
       createField("Tipo", typeSelect),
       createField("Estado", statusSelect),
       createField("Fecha de inicio", startDateInput),
-      createField("Próxima fecha", nextDateInput),
-      createField("Avance (%)", progressInput),
+      createField("Próxima fecha", nextDateInput, "Se toma del hito pendiente más cercano."),
+      createField("Avance (%)", progressInput, "Es el promedio de todos los hitos."),
       createField("Aporte esperado (USD)", expectedInput),
       createField("Aporte recibido (USD)", receivedInput)
     );
-    form.append(grid, error);
+    form.append(automaticNote, grid, error);
 
     function showError(message) {
       error.textContent = message;
@@ -130,17 +147,10 @@
         const startDate = global.AppValidators.assertValid(
           global.AppValidators.validateDate(startDateInput.value, { required: true })
         );
-        const nextDateValidation = global.AppValidators.validateDate(nextDateInput.value);
-        const progress = global.AppValidators.assertValid(
-          global.AppValidators.validateProgress(progressInput.value)
-        );
         const typeId = Number(typeSelect.value);
 
         if (!Number.isInteger(typeId) || typeId <= 0) {
           throw new Error("Selecciona un tipo de proyecto válido.");
-        }
-        if (!nextDateValidation.valid) {
-          throw new Error(nextDateValidation.error);
         }
 
         const expectedCents = global.AppCurrency.parseCurrencyToCents(expectedInput.value);
@@ -159,8 +169,6 @@
           tipoId,
           estado: statusSelect.value,
           fechaInicio: startDate,
-          proximaFecha: nextDateValidation.value,
-          avance: progress,
           aporteEsperadoCentavos: expectedCents,
           aporteRecibidoCentavos: receivedCents
         });
