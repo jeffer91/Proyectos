@@ -5,17 +5,8 @@
   const VALID_SORT_DIRECTIONS = new Set(["asc", "desc"]);
   const listeners = new Set();
 
-  const state = {
-    projects: [],
-    types: [],
-    summary: {
-      total: 0,
-      activos: 0,
-      proximosAVencer: 0,
-      aporteEsperadoCentavos: 0,
-      aporteRecibidoCentavos: 0
-    },
-    filters: {
+  function createDefaultFilters() {
+    return {
       search: "",
       typeId: null,
       status: "",
@@ -23,8 +14,26 @@
       dateTo: "",
       economic: "todos",
       includeCompleted: false,
+      includeArchived: false,
       quickFilter: "total"
-    },
+    };
+  }
+
+  function createDefaultSummary() {
+    return {
+      total: 0,
+      activos: 0,
+      proximosAVencer: 0,
+      aporteEsperadoCentavos: 0,
+      aporteRecibidoCentavos: 0
+    };
+  }
+
+  const state = {
+    projects: [],
+    types: [],
+    summary: createDefaultSummary(),
+    filters: createDefaultFilters(),
     sort: {
       field: "proximaFecha",
       direction: "asc"
@@ -115,7 +124,7 @@
 
     setSummary(summary = {}) {
       state.summary = {
-        ...state.summary,
+        ...createDefaultSummary(),
         ...(summary && typeof summary === "object" ? summary : {})
       };
       notify();
@@ -135,6 +144,12 @@
         )
           ? source.includeCompleted === true
           : state.filters.includeCompleted,
+        includeArchived: Object.prototype.hasOwnProperty.call(
+          source,
+          "includeArchived"
+        )
+          ? source.includeArchived === true
+          : state.filters.includeArchived,
         quickFilter: Object.prototype.hasOwnProperty.call(source, "quickFilter")
           ? String(source.quickFilter || "custom")
           : state.filters.quickFilter
@@ -144,16 +159,7 @@
     },
 
     resetFilters() {
-      state.filters = {
-        search: "",
-        typeId: null,
-        status: "",
-        dateFrom: "",
-        dateTo: "",
-        economic: "todos",
-        includeCompleted: false,
-        quickFilter: "total"
-      };
+      state.filters = createDefaultFilters();
       state.pagination.page = 1;
       notify();
     },
@@ -210,6 +216,10 @@
     clear() {
       state.projects = [];
       state.types = [];
+      state.summary = createDefaultSummary();
+      state.filters = createDefaultFilters();
+      state.sort = { field: "proximaFecha", direction: "asc" };
+      state.pagination = { page: 1, pageSize: 10 };
       state.selectedProjectId = null;
       state.loading = false;
       state.error = null;
